@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Wrapper script for the Ruby 0.49 Cosmopolitan binary
+binary = File.expand_path("ruby-0.49.com", __dir__)
+exec(binary, *ARGV)
