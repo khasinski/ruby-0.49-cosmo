@@ -1,0 +1,51 @@
+.\" FAQ -  -*- Indented-Text -*- created at: Tue Jan  4 12:48:12 JST 1994
+This is a collection of Frequently Asked Questions (FAQ) regarding Ruby.
+If you're viewing this file in Emacs, you can read only the questions by pressing M-2 C-x $. You can return to reading the entire document by pressing C-x $.
+------------------------------
+1) What is the origin of the name "Ruby"?
+
+    Ruby is not an abbreviation of anything; it was named after the red gemstone.
+    It was named with the idea of succeeding Perl (pearl, which is the birthstone of June) — Ruby is the birthstone of July. It also expresses a desire for Ruby to be something beautiful and valuable.
+------------------------------
+2) What languages influenced Ruby?
+
+    The design of Ruby was influenced, in this order, by C, Perl, and Eiffel. Other languages that influenced Ruby include Tcl, AWK, Bourne shell, CLU, Icon, Sather, Smalltalk, and Emacs Lisp.
+------------------------------
+3) What are the features of Ruby?
+
+    The following is a list of key features:
+
+      + It is an interpreter, and you can easily write programs.
+      + No need for variable declarations.
+      + Easy UNIX-like operations for files and streams.
+      + Can handle binary files.
+      + It is a proper object-oriented language.
+      + Provides support for singleton methods.
+      + Allows functionality sharing via modules.
+      + Has exception handling.
+      + With garbage collection (GC), you don’t need to worry about memory management.
+      + Consistent language specifications.
+      + Can handle complex data structures.
+      + Supports dynamic loading (system-dependent).
+
+    On the flip side, its drawbacks are:
+
+      - It is still in development with fewer features.
+      - Lacks a debugger (for now).
+      - It's slow.
+
+    These are the main concerns.
+------------------------------
+4) What are the benefits of Ruby not requiring variable declarations?
+
+    The greatest benefit is that the scope of a variable can be immediately understood, which increases readability and understandability of the program. Additionally, the reduction in the total number of types makes the language easier to write and use.
+------------------------------
+5) What is the difference between Ruby and Perl?
+
+    Ruby and Perl are both excellent scripting languages for text manipulation, and their areas of overlap make them seem like rivals at first glance. Indeed, one of the goals during Ruby's design was to make sure it could do what Perl can do. However, the true purpose of Ruby is to be a "convenient object-oriented language," and as a result of Ruby's three major design goals — functionality, consistency, and extensibility — Ruby has evolved into a different language from Perl.
+
+    Ruby is not as "anything goes" as Perl, and in most cases, it is slower than Perl. However, Ruby's object-oriented features will appeal to people who are unsatisfied with Perl's approach.
+------------------------------
+Local variables:
+fill-column: 70
+end:

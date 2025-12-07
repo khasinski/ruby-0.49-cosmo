@@ -1,0 +1,6 @@
+* Make assignment to $0 affect ps output
+* Implement variable hooks defined in ruby
+* Are FUNC-form methods really necessary?
+* write debugger for ruby
+* re-write regex code for speeding
+* byte code interpretor

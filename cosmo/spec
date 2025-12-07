@@ -1,0 +1,3012 @@
+.\" spec -  -*- Indented-Text -*- created at: Tue May 25 15:18:26 JST 1993
+
+* Introduction (Why Ruby?)
+
+Ruby was created to fulfill the desire for "simple object-oriented programming on UNIX."
+The properties thought necessary for this were:
+
+    * Simple syntax and features.
+    * Designed as a language with features that support object-oriented programming.
+    * Short turnaround time (it is an interpreter).
+    * Easy use of OS (UNIX) features.
+    * Usable as a scripting language.
+    * The implementation is free.
+
+Languages such as Smalltalk and C++, which are generally considered object-oriented languages,
+satisfy some of the above conditions, but especially in terms of "easy programming," they fall
+short and do not satisfy them all. On the other hand, systems such as Perl or Tcl with
+object-oriented features added exist as scripting languages, but although they satisfy
+"easy programming," they instead have deficiencies or dissatisfaction in their object-oriented
+features. Therefore, it was thought necessary to design a new language that satisfies all of
+these conditions. Ruby was designed with these points in mind, and its characteristics are:
+
+    * It is an interpreter.
+    * Simple syntax with few exceptions.
+    * Sufficient object-oriented capabilities.
+    * As easy to write as possible (operator notation, etc.).
+    * Has a garbage collector.
+    * Has exception handling.
+    * Has sufficiently powerful built-in classes.
+    * Provides functionality to access the OS.
+    * Easy to extend.
+
+Ruby generally follows conventions familiar to people who know sh or perl,
+so natural migration from these languages seems possible. If programmers learn Ruby's
+object-oriented features, they will be able to do even more powerful things.
+
+Furthermore, by writing classes in the C language, Ruby can be made even more powerful.
+On some operating systems, Ruby can dynamically link object files, and even when this is
+not possible, it is easy to recompile Ruby and add built-in classes.
+
+* Ruby Basics
+
+The basic portion of Ruby is very small, and because the syntax has few exceptions,
+learning it should not be very difficult.
+
+** Comments
+
+Following the habits of scripting languages, everything from a '#' to the end of the line,
+except inside strings, is treated as a comment.
+
+** Delimiters
+
+Whitespace characters (tabs and spaces) and newlines (\n) serve as delimiters. However,
+
+    a +
+    b
+
+except in cases where it is obvious that the line ends in the middle of an expression (statement)
+and continues on the next line, a newline is recognized as a statement delimiter.
+
+** Identifiers
+
+Any sequence starting with an alphabetic character or '_', followed by any combination of
+alphabetic characters, digits, or '_', is an identifier. There is no limit to the length
+of identifiers.
+
+** Reserved Words
+
+The reserved words are as follows:
+
+   break,    case,    class,   continue,  def,    do,      else,
+   elsif,    end,     ensure,  for,       func,   if,      in,
+   include,  module,  nil,     protect,   redo,   resque,  retry,
+   return,   self,    super,   then,      undef,  unless,  until,
+   using,    when,    while,   yield,     __END__
+
+Reserved words cannot be used for class names, method names, variable names, etc.
+
+** Literals
+
+The following literals exist:
+
+   String literals
+
+        "..."   # backslash escapes enabled
+        '...'   # backslash escapes disabled (\\ and \' are interpreted)
+
+        Backslash notation
+
+                \t      tab (0x09)
+                \n      newline (0x0a)
+                \r      carriage return (0x0d)
+                \f      form feed (0x0c)
+                \b      backspace (0x08)
+                \a      bell (0x07)
+                \e      escape (0x1b)
+              \nnn      octal notation (n is 0-7)
+              \xnn      hexadecimal notation (n is 0-9, a-f)
+               \^c      control character (c is ASCII)
+              \C-c      control character (same as above)
+              \M-c      meta character (c|0x80)
+
+    Regular expression literal
+
+             /.../
+
+    Regular expressions
+
+                 ^      beginning of line
+                 $      end of line
+                 .      any single character
+                \w      alphanumeric. same as [0-9A-Za-z_]
+                \W      non-alphanumeric
+                \s      whitespace. same as [ \t\n\r\f]
+                \S      non-whitespace
+                \d      digit. same as [0-9]
+                \D      non-digit
+                \b      word boundary (outside char class)
+                \B      non-word boundary
+                \b      backspace (0x08) (inside char class)
+               [ ]      character class
+                 *      zero or more repetitions of preceding expression
+                 +      one or more repetitions
+             {m,n}      repeat m to n times
+                 ?      zero or one time
+                 |      alternation
+               ( )      grouping
+
+        Backslash notation is also valid within them.
+
+   Numeric literals
+
+               123      integer
+              -123      integer (signed)
+             1_234      integer (decimal integers may contain '_')
+            123.45      floating point
+            1.2e-3      floating point
+            0xffff      hexadecimal integer
+              0377      octal integer
+                ?a      code of character 'a' (97)
+             ?\C-a      code of control-a (1)
+             ?\M-a      code of meta-a (225)
+          ?\M-\C-a      code of meta-control-a (129)
+
+        All backslash notation is valid within ?-expressions.
+
+** Grouping
+
+Expressions may be grouped using parentheses. Multiple expressions may also be written
+inside parentheses. When writing a sequence of expressions, newline or ';' is used as
+a separator. The value of a sequence of expressions is the value of the last evaluated
+expression. In other words,
+
+    (expression; expression; ...)
+
+evaluates to the value of the last expression.
+
+** Literals
+
+The numeric, string, and regular expression literals described above are all expressions.
+
+** Array Expression
+
+An array expression has the form:
+
+    [ expression, ... ]
+
+It returns an array containing the results of evaluating each expression.
+To generate an array with zero elements, use the empty array expression:
+
+    []
+
+** Dictionary (Associative Array) Expression
+
+A dictionary is an array that can use any object as a key (index). In Ruby,
+a dictionary is also called a Dict, borrowing Smalltalk's terminology.
+See the section on class Dict for details. The dictionary-creation expression is:
+
+    { expression=>expression, ... }
+
+It returns a dictionary object using each evaluated expression as a key and value.
+To generate an empty dictionary, use:
+
+    {}
+
+** Variable Reference
+
+There are four kinds of variables, determined by the first character of the name.
+The value of an unassigned variable reference is nil.
+
+  Class variable (constant)
+
+    Variables beginning with '%' are class variables, accessible from instances of
+    that class and all subclasses. Assignment to this variable is only possible at
+    the top-level (the level where methods can be defined). The value is shared
+    among classes, and once assigned, the value cannot be changed from methods,
+    so it is used as a constant.
+
+  Instance variable
+
+    Variables beginning with '@' are instance variables, accessible from methods
+    of the class or its subclasses. Their lifetime equals the lifetime of the object.
+
+  Global variable
+
+    Variables beginning with '$' have global scope and a lifetime equal to the
+    lifetime of the program.
+
+  Class name / module name / local variable
+
+    Identifiers beginning with an alphabetic character or '_' are called identifiers,
+    and they are either local variables, class names, or module names.
+
+    Initially, identifiers are treated as class/module names (if the corresponding
+    class does not exist, the value is nil), but an identifier appearing on the left
+    side of an assignment is treated as a local variable within that scope, and
+    classes or modules of the same name are hidden. In this way, assignment to
+    an identifier also acts as a declaration.
+
+        Array           # class Array
+        Array = 15    # assignment; Array is now a local variable
+        print(Array, "\n")  # outputs '15'
+
+    Since this declaration is interpreted at compile time, whether or not the
+    assignment is actually executed, that identifier is considered a local variable
+    within the remainder of the scope.
+
+        Array           # class Array
+        if %FALSE
+          Array = 15      # this code is not executed,
+        # but Array is still considered local thereafter
+        end
+        print(Array, "\n")    # outputs 'nil'
+
+    Although this rule appears complex, as long as class/module names and local
+    variable names do not collide, you may simply think that an uninitialized
+    local variable's value is nil.
+
+    Ruby's built-in functions have names beginning with uppercase letters.
+    Users are strongly encouraged to use identifiers beginning with uppercase
+    letters for class/module names, and identifiers beginning with lowercase
+    or '_' for local variable names.
+
+    The lifetime of a local variable is until the method ends (top-level local
+    variables last until program termination).
+
+There are also special variables called pseudo-variables: self and nil.
+self refers to the current receiver of the method execution, and nil refers to the
+sole instance of class Nil (representing false). These pseudo-variables cannot have
+their values changed by assignment. Attempting to assign to them raises an exception.
+
+** Message Expression
+
+The basic syntax for sending a message to an object is the message expression.
+Its basic form is:
+
+    expression1.method_name(arguments...)
+
+        Evaluates expression1 and calls the method specified by the identifier
+        on the resulting object. If the last argument is a single expression
+        preceded by '*', the resulting value (must be an array) is expanded and
+        added as arguments.
+
+        Parentheses may be omitted when there are no arguments.
+
+Any identifier may be used as a method name.
+The namespace for method names is separate from that of variables, so duplicates are allowed.
+
+** Function Form
+
+In a message expression, if the receiver is self, the receiver may be omitted,
+and the method can be called in function form. In this case, parentheses cannot
+be omitted even when there are no arguments.
+
+In function form, methods whose names begin with '@' may be called.
+Such methods can only be called in function form and therefore only from the class
+or its subclasses, so they are called private methods. Private methods correspond
+to protected member functions in C++.
+
+** Calling a Method of the Superclass
+
+A special form of message expression is the call to the superclass's method.
+This is used when redefining a method to make use of the superclass's definition.
+
+    super
+
+        Calls the superclass's method of the same name with the same arguments
+        given to the current method.
+
+    super(arguments...)
+
+        Calls the superclass's method of the same name with the given arguments.
+        If the last argument begins with '*', it behaves as in normal method calls.
+
+** Operator Expressions
+
+For convenience in programming, some method calls and control structures take
+operator form. Ruby has the following operators, listed from strongest to weakest
+precedence; operators in the same row have equal precedence.
+
+   Strong   -(unary)  +(unary)  !  ~
+            **
+            *  /  %
+            +  -
+            <<  >>
+            >  >=  <  <=
+            <=> ==  !=  =~  !~
+            &
+            |  ^
+            &&
+            ||
+            .. ...
+            ::
+            =(assignment) compound assignment (+=, -=, ..)
+   Weak     yield
+
+Most operator expressions are interpreted as method calls (and may be redefined
+per class), but some are special and cannot be redefined. The non-redefinable special
+operators are:
+
+      &&(logical AND), ||(logical OR), =(assignment), ...(range),
+  yield(block invocation)
+
+Other operators are treated as method calls.
+Unary operators (+, -, !, ~) are interpreted as:
+
+    expression1."operator"()
+
+Binary operators are interpreted as:
+
+    expression1."operator"(expression2)
+
+Multi-argument operators such as array reference ([]) are special cases of operator form:
+
+    recv[arg..]
+
+is interpreted as
+
+    recv."[]"(arg..)
+
+Assignment to array elements follows the same rule.
+
+** Conditional Expressions
+
+The expressions in the condition parts of if, unless, while, and until,
+and both sides of the special operators '&&', '||', and '...',
+as well as the right side of the ordinary operator '!', are called conditional expressions.
+In conditional expressions, string and regular expression literals are treated as shorthand
+for the expression "$_ =~ literal". Additionally, on both sides of the '...' operator,
+integer literals are interpreted as shorthand for "$. == literal".
+
+Note: '!' is not a special operator; take care if redefining it.
+
+  ! string literal
+  ! regular expression literal
+
+In these forms, the argument passed to the method is not the object represented
+by the literal. It is better not to redefine the '!' method.
+
+** Assignment
+
+There is true assignment to variables, and assignment used as syntactic sugar
+to simplify programs. True assignment has the form:
+
+    variable = expression
+
+This evaluates the expression and assigns it to the variable.
+You cannot assign to classes, modules, or pseudo-variables.
+To change class or module definitions, use class or module statements.
+Although assignment uses operator notation, it is not a method and thus
+cannot be redefined.
+
+There are the following syntactic-sugar assignment forms:
+
+  Assignment to array elements
+
+    expression1[expression2,..] = expressionN
+
+    Evaluates expression1 and calls its "[]=" method with expression2 through
+    expressionN as arguments.
+
+  Attribute assignment
+
+    expression1.identifier = expression2
+
+    Evaluates expression1 and calls its "identifier=" method with expression2
+    as an argument.
+
+  Compound assignment
+
+    expression1 op= expression2     # expression1 must be assignable.
+
+    Internally expanded to "expression1 = expression1 op expression2".
+    Compound assignment exists to reduce typing.
+    The operators available for op are:
+
+        +, -, *, /, %, **, &, |, ^, <<, >>
+
+    (11 in total). Do not include spaces between the operator and '='.
+
+*** Multiple Assignment
+
+You can assign to multiple variables at once. The form is:
+
+    variable, [variable,...] = expression [, expression]
+
+If there is only one right-hand expression and its value is an array,
+the elements of the array are assigned to the variables. Otherwise,
+each expression's value is assigned to each variable.
+If the number of variables does not match the number of elements,
+missing variables receive nil, and extra elements are ignored.
+
+    foo, bar = [1, 2]   # foo = 1; bar = 2
+    foo, bar = 1, 2   # foo = 1; bar = 2
+    foo, bar = 1    # foo = 1; bar = nil
+
+    foo, bar, baz = 1, 2  # foo = 1; bar = 2; baz = nil
+    foo, bar = 1, 2, 3    # foo = 1; bar = 2
+
+** Conditional Branching
+
+  if expression1 [then]
+    statements1
+  [ elsif expression2 [then]
+    statements2 ]...
+  [ else
+    statementsN ]
+  end [ if ]
+
+    Conditional statement. Note that it is elsif, not else if or elif.
+
+  unless expression1 [then]
+    statements1
+  [ else
+    statements2 ]
+  end [ unless ]
+
+    Executes statements1 if expression1 returns false (nil),
+    or if an exception occurs during evaluation of expression1.
+
+  expression1 && expression2
+
+    Evaluates expression1; if it is true (non-nil), evaluates expression2.
+
+  expression1 || expression2
+
+    Evaluates expression1; if it is false, evaluates expression2.
+
+  expression1 ... expression2
+
+    Returns false until expression1 becomes true, then returns true until
+    expression2 becomes true. After expression2 becomes true,
+    the state returns to false.
+
+  case expression0
+  [ when expression1 [, expression2]...
+    statements1 ]...
+  [ else
+    statementsN ]
+  end [ case ]
+
+    Conditional branching. More similar to Pascal's case than C's switch.
+    There is no break to exit early, nor continuation into later clauses.
+
+    Condition matching is performed using "expressionN =~ expression0".
+    That is,
+
+         case expr0
+         when expr1, expr2
+           stmt1
+         when expr3, expr4
+           stmt2
+         else
+           stmt3
+         end
+
+    is equivalent to:
+
+          _tmp = expr0
+          if expr1 =~ _tmp || expr2 =~ _tmp
+            stmt1
+          elsif expr3 =~ _tmp || expr4 =~ _tmp
+             stmt2
+          else
+             stmt3
+          end
+
+** Loops
+
+  while expression
+    statements
+  end [ while ]
+
+    Executes the statements repeatedly while the condition is true.
+
+  until expression
+    statements
+  end [ until ]
+  expression1 until expression2
+
+    Executes the statements while expression2 returns false (nil)
+    or while an exception occurs during evaluation.
+
+** Iterators
+
+An iterator is a type of method used to abstract control structures
+(especially loops). The syntax for calling an iterator is:
+
+  do
+    statements1
+  using variable
+    statements2
+  end [ do ]
+
+    Sets "statements2" as the block and evaluates statements1 as iterators.
+    Only top-level methods in statements1 are called as iterators;
+    receiver expressions and argument expressions are not called as iterators.
+    If statements1 contains multiple expressions, each is called
+    sequentially as an iterator.
+
+Inside an iterator, when yield value is executed, its value is assigned
+to the variable specified in the do statement, and the block is executed.
+When the block finishes, that value is returned as the value of the yield
+expression. Whether a method was called as an iterator can be determined
+by the function iterator_p(). Some methods behave differently when called
+as iterators versus ordinary methods, such as Enumerable's grep method.
+
+  for variable in expression
+    statements
+  end [ for ]
+
+    Executes the statements for each element of the expression.
+    This is equivalent to:
+
+        do (expression).each using variable
+          statements
+        end
+
+    Therefore, if the value of the expression does not have an each method,
+    executing for will raise an exception.
+
+** Exception Handling
+
+When an unexpected situation occurs during processing, an exception is raised.
+In Ruby, exceptions can be caught along the way to retry or perform cleanup.
+
+  protect
+    statements1
+  [ resque
+    statements2 ]
+  [ ensure
+    statements3 ]
+  end [ protect ]
+
+    Executes statements1; if an exception occurs during its execution,
+    statements2 in the resque clause are executed. If an ensure clause is present,
+    statements3 are always executed before leaving the protect block
+    (not only on normal exit but also on exceptions, return, break, continue, redo, etc.).
+
+In addition to protect, unless and until implicitly handle exceptions by treating
+exceptions raised when evaluating the right-hand side as false.
+
+** Non-local Exits
+
+  return [expression]
+
+    Ends execution of a method.
+
+  continue
+  redo
+  break
+
+    These three are used inside loops.
+
+    continue begins the next iteration of the innermost loop.
+    redo repeats the current iteration without checking the loop condition.
+    break exits the loop. Unlike in C, break only exits the innermost loop,
+    not case statements.
+
+  retry
+
+    Used in the resque clause of a protect block to restart the protect block
+    from the beginning. Used for retry after exception handling.
+
+  fail([message])       * This is a method of class Kernel.
+
+    Raises an exception. If a message is given, it sets $@ to the source file name
+    and line number where the exception occurred, and $! to the message.
+
+** Block Invocation inside Iterators
+
+  yield expression
+
+    Invokes the block inside the iterator. If the method executing yield
+    was not called as an iterator, an exception is raised.
+
+** Class Definition
+
+The syntax for defining a class is as follows.
+
+   class ClassName [ : SuperClassName ]
+       definition-body
+   end [ class ]
+
+The value is nil. Class names are identifiers beginning with a capital letter.
+Class definitions cannot be nested, so you cannot define a class within another definition statement.
+
+** Module Definition
+
+The syntax for defining a module is as follows.
+
+   module ClassName
+       definition-body
+   end [ module ]
+
+Module names are identifiers beginning with a capital letter. Like classes, module definitions cannot be nested.
+
+** Include
+
+The syntax for including modules in a class is as follows.
+
+   include ModuleName [, ModuleName...]
+
+This includes the specified module(s) into the currently defined class or module
+(Object at the top level). This can be used to emulate multiple inheritance.
+
+** Method Definition
+
+The form of a normal (non-singleton) method definition is as follows. Normal method
+definitions cannot be nested, so you cannot call another method definition statement
+within a method definition.
+
+    def [func] MethodName [ ( arg [, arg...][, *arg ] ) ]
+        definition-body
+    end [ def ]
+
+Method names are identifiers or strings. When redefining operators, specify the name as a string.
+If the last element in the parameter list is `*`, then any extra actual arguments will be
+given as an array to the last parameter (an error occurs if not enough arguments are given).
+
+When the keyword `func` is specified, the method becomes a functional method that can
+only be called in function form.
+
+** Singleton Method Definition
+
+There is another form of method definition: the singleton method. The form is as follows.
+
+   def expression.MethodName [ ( arg [, arg...][, *arg ] ) ]
+       definition-body
+   end [ def ]
+
+This form defines a singleton method for the object that is the value of the expression.
+The expression must evaluate to a normal object (not a built-in class), a class, or a module.
+Unlike normal method definitions, singleton method definitions can be nested and called
+within the method body.
+
+A singleton method belongs only to a specific object. Thus, it normally cannot be inherited,
+but as an exception, a class's singleton methods are inherited by its subclasses.
+In other words, singleton methods of a class behave like class methods in other object-oriented systems.
+
+** Method Alias Definition
+
+A method can be given an alias with the following form.
+
+   def MethodName1 MethodName2
+
+The aliased method inherits the method definition as of that point in time, and even if
+the original method is later redefined, the alias behaves exactly as the original did at the time of aliasing.
+
+** Method Undefinition
+
+To cancel a method definition, use undef.
+
+   undef MethodName
+
+This cancels the definition of the method specified by an identifier or string.
+
+By using alias definitions with def and method cancellation with undef, you can modify
+a class's interface independently of its superclass. However, when sending messages to
+self, care must be taken, because existing methods may stop working.
+
+* Ruby Built-in Features
+
+The basics of Ruby programming are the learning of classes, modules, and their methods.
+Ruby has the following features built into the interpreter itself. Functionality may be
+extended by loading libraries, for which you should refer to the documentation of each library.
+
+Methods marked with a `+` on the right edge are functional methods.
+
+** Functions
+
+Ruby has no functions in the strict sense, but some methods of the Kernel class can be
+used functionally (since they can be called in function form from any class).
+Methods used functionally are listed below. When redefining these methods, compatibility
+should be considered.
+
+   _exit(status)            +
+
+  Terminates program execution. Uses integer status as the exit status.
+  Unlike exit(), no exception handling is performed. Used, for example, after fork()
+  to terminate a child process.
+
+   caller                                                       +
+   caller(level)                                                +
+
+        Obtains information from the stack frame and returns an array containing
+        the file name, line number, and arguments of the caller. If level is given,
+        returns information level frames above the current frame.
+
+   eof()              +
+
+  Returns true when input from the command line has reached EOF.
+
+   eval(expr)                                                   +
+
+        Interprets and executes the string given by expr as a Ruby program.
+
+   exec(command)                                                +
+
+        Terminates the currently running process and starts a different process
+        specified by the command string.
+
+   exit([status])                                               +
+
+        Terminates program execution. If integer status is given, that value becomes
+        the exit status of the Ruby command. Default is 0.
+
+   fail([message])                                              +
+
+        Raises an exception. If a message is given, it is set to system variable `$!`,
+        and the location where it occurred is set to `$@`.
+
+   fork()                                                       +
+
+        Executes the fork system call and creates a child process. See fork(2) for details.
+        Returns the child's process id to the parent, and nil to the child.
+        Raises an exception if creation of the child fails for any reason.
+
+   format(format, ...)                                          +
+
+        Interprets the string given as format in the same way as C's sprintf and
+        returns a string with the arguments expanded. Alias for sprintf().
+
+  For extensions to format specifiers in Ruby, see the entry for sprintf().
+
+   getc()                                                       +
+
+        Takes one character from standard input. The return value is the ASCII code
+        of the character, as a Fixnum.
+
+   getenv(name)                                                 +
+
+        Retrieves the environment variable corresponding to name.
+
+   gets(pattern, replace)                                       +
+
+        Reads one line from the file given as argument (or from standard input if none),
+        returning the string when successful. Returns nil on reaching end of file.
+        The line separator can be changed with system variable `$/'`.
+        The string read is also set to system variable `$_`.
+
+   gsub()                                                       +
+
+        Performs substitution on the string pointed to by `$_`.
+        All substrings matching pattern are replaced with replace.
+        See String's gsub method for details.
+
+   iterator_p()                                                 +
+
+        Returns true when the method is called as an iterator, false otherwise.
+
+   kill(signal, pid...)                                         +
+
+        Sends a signal to the process specified by pid.
+        Signal may be specified by number or name.
+        A negative signal value (or preceding `-` in the name) causes the signal
+        to be sent to a process group rather than a process.
+
+   load(file)                                                   +
+
+        Loads file. The path used to load file is determined by system variable $LOAD_PATH.
+
+   open(file[, mode])                                           +
+
+        Opens file and returns a File object.
+        If filename begins with `|`, the following string is executed as a command
+        and a pipeline is created.
+
+        If the command name is "-", open() creates a Ruby child process and returns
+        a pipe to the child.
+
+        mode specifies the access mode and is one of the following strings:
+
+            r   Read-only. The file must already exist.
+
+            r+  Read/write. The file must already exist.
+
+            w   Write-only. If the file exists, its length is truncated to 0.
+                If not, a new file is created.
+
+            w+  Read/write. Same as "w" except reading is also allowed.
+
+            a   Append-only. File must already exist. Write operations append to the end.
+
+            a+  Read/write. Creates the file if it does not exist.
+                Initial position is the end of the file.
+
+        Default mode is "r" if omitted.
+
+   print(arg1, ..., argn)
+
+        Outputs the arguments in order. If no arguments are given, outputs the receiver.
+        Non-string objects are converted to strings via their to_s methods.
+        If system variable `$;'` (output field separator) is set to a non-nil value,
+        it is printed between each argument.
+        If system variable `$\'` (output record separator) is set to a non-nil value,
+        it is printed at the end.
+
+   printf([port, ]format, arg1, ..., argn)                      +
+
+        Converts arguments to strings according to the format (same as C's printf()) and outputs them.
+        If the first argument is an instance of a subclass of IO, the output is sent to that object.
+        Defaults to $stdout.
+
+  For extensions to format specifiers in Ruby, see the entry for sprintf().
+
+   rand(max)                                                    +
+
+        Generates a random integer from 0 up to max inclusive. Returns a Fixnum.
+
+   require(file)
+
+  Loads file. Unlike load, require remembers the full path of loaded files
+  in $LOAD_FILES and does not reload a file already loaded.
+  Returns %TRUE if actually loaded, %FALSE if already loaded.
+
+   select(reads[, writes[, execpts[, timeout]]])                +
+
+        Executes select(2).
+        reads/writes/execpts are arrays of IO instances (or subclasses).
+        timeout may be Fixnum / Float / Time.
+        Returns nil if timeout occurs, otherwise returns a 3-element array,
+        each containing the objects ready for input/output/exception.
+
+   setenv(name, value)                                          +
+
+        Sets the environment variable name to value.
+
+   sleep([sec])                                                 +
+
+        Suspends program execution for sec seconds.
+        If omitted, sleeps indefinitely until SIGALRM is sent.
+        Returns the number of seconds actually slept.
+
+   sprintf(format, ...)                                         +
+
+        Interprets the format string as in C's sprintf and returns a string with
+        the expanded arguments. Alias for format().
+
+  format specifiers include those accepted by C's sprintf() (but not %u,
+  as Ruby has no unsigned), plus %b, %B, %O, %X.
+  %b is binary representation.
+  %B, %O, %X are binary, octal, and hexadecimal respectively, but for negative
+  numbers they display a leading '-' and the absolute value, not two's complement.
+
+   srand([initial])                                              +
+
+        Sets the seed for random numbers and returns the old seed.
+        Defaults to the value returned by time(3) if omitted.
+
+   sub()                                                        +
+
+        Performs substitution on the string pointed to by `$_`.
+        Replaces the first substring matching pattern with replace.
+        See String's sub method for details.
+
+   system(command)                                              +
+
+        Executes the command and returns its exit status.
+
+   system2(command)                                             +
+
+        Executes the command and returns its output as a string.
+
+   trap(command, signal...)                                     +
+
+        Executes command when signal is received.
+        signal may be a name or number.
+        command = SIG_IGN or IGNORE causes the signal to be ignored (if possible).
+        SIG_DFL or DEFAULT restores default behavior.
+
+   wait()                                                       +
+
+        Waits for a child process to exit and returns its pid.
+        Returns nil if no child processes exist.
+
+   waitpid(pid, flags)                                          +
+
+        Waits for the specific child process pid to exit and returns true when it does.
+        Returns nil if no child exists, or if in nonblocking mode and the child has not exited.
+        On systems without waitpid(2)/wait4(2), flags must always be nil or 0.
+
+** System Variables
+
+   $!           Error message. Set by fail().
+
+   $@           File name and line number at the point an error occurred, stored as:
+
+                    "file:line[:methodName(if any)]"
+
+   $&           The last successful pattern match.
+
+   $1..$9       Values matched by the nth set of parentheses in the last successful match.
+                If none exists, the value is nil.
+
+   $~           Information about the last match. Setting this changes $& and $1..$9.
+
+   $=           When this is not nil, pattern matching and string comparison ignore
+                case of alphabetic characters. Default is nil (case sensitive).
+
+   $/           Input record separator. Specifies the delimiter for splitting files
+                and strings for each.
+                If empty string (""), input is read by paragraph.
+                If nil, the entire input is read at once.
+                Cannot use regular expressions. Default "\n".
+
+   $\           Output record separator. When set, this string is appended to every
+                write() or print(). Default is nil (adds nothing).
+
+   $,   Default separator string for Array:join(). Printed between arguments of print().
+
+   $;   Default separator string for String:split().
+
+   $.           Line number of the last input file read.
+
+   $_           Last string read by gets() and similar.
+
+   $0           Name of the ruby script.
+
+   $*           Arguments passed to the ruby script. Arguments for ruby itself are removed.
+
+   $$           pid of the currently running Ruby process.
+
+   $?           Status of the last executed child process.
+
+   $ARGV        Same as $*.
+
+   $ENV   Associative array (EnvDict) for accessing environment variables.
+    Using `for` on this gives pairs of variable names and values.
+
+   $FILENAME    Name of the file currently being read by gets().
+
+   $DEBUG Truth value of the `-d` flag.
+
+   $LOAD_PATH   Array of directory paths searched when loading files.
+                Initialized with default values (set at compile-time), plus the
+                value of the RUBYLIB environment variable and any -I options
+                passed when Ruby starts.
+
+   $stdin       Standard input
+   $stdout      Standard output
+   $stderr      Standard error output
+
+   $VERBOSE Truth value of the `-v` flag.
+
+   $VERSION     String representing the Ruby version.
+
+** System Constants
+
+   %TRUE        1 (Fixnum)
+   %FALSE       nil
+
+        These represent boolean values.
+        Conditional tests treat nil as false and everything else as true,
+        so methods returning truth values may return values other than %TRUE,
+        meaning it is inappropriate for comparison. For example:
+
+                (2 < 3) == %TRUE
+
+        This is not true, since "<" returns the right-hand value when true,
+        so the result is 3, not 1 (%TRUE).
+        No such issue arises with %FALSE.
+
+** Class / Module
+
+*** Array (Class)
+
+A class for arrays indexed by numbers. Usually created via the array literal "[...]".
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self[nth]
+   self[start..end]
+   self[start, length]
+
+        Access elements of the array.
+        The first form returns the nth element.
+        The second returns the subarray from start to end inclusive.
+        The third returns the subarray of length elements starting from start.
+
+   self[nth] = val
+   self[start..end] = val
+   self[start, length] = val
+
+        Modifies elements of the array.
+        In the first form, sets the nth element to val.
+        In the second, sets elements from start to end to val.
+        In the third, sets length elements starting at start to val.
+
+        In the second and third forms, val must be an array.
+
+        Example:
+
+          ary = [1, 2, 3, 4, 5]
+          ary[0..2] = [0, 0] # Array becomes [0, 0, 4, 5]
+          ary[1, 0] = [7]    # Array becomes [0, 7, 0, 6, 5]
+
+   self + other
+
+        Concatenation. Returns a new array containing elements of self followed by other.
+
+   self * times
+
+        Repetition of the array.
+
+   self << obj
+
+        Appends obj to the end of the array.
+        Returns self, so chaining like C++ is possible.
+
+   assoc(key)
+
+        Searches an associative list (an array of 2-element arrays) and returns the
+        array whose first element equals key ("==" comparison).
+
+   clear
+
+  Resets the array's size to 0.
+
+   delete(item)
+
+  Deletes elements equal to item.
+
+   delete_if
+
+        Iterator that deletes elements for which the block evaluates to true.
+
+   each
+
+        Iterator that yields each element in order.
+
+   fill(val)
+   fill(val, start[, length])
+   fill(val, start..end)
+
+  Sets the array (or specified portion) to val.
+  In the second form, if length is omitted, it fills to the end of the array.
+  If the specified range exceeds the array bounds, the array expands automatically.
+
+   join([sep])
+
+        Returns a string made by concatenating all elements converted to strings.
+        sep is inserted between elements; if omitted, system variable `$,'` is used.
+
+   length
+
+        Returns the length (number of elements) of the array.
+
+   push(obj)
+
+        Appends obj to the end of the array.
+
+   pack(template)
+
+        Packs the contents of the array into a string according to template.
+        Returns the packed string.
+        The template is a sequence of type specifiers with optional lengths
+        (default length 1). A length of `*` means "all remaining data".
+
+        Type specifiers:
+
+          a     ASCII string (null padded)
+          A     ASCII string (space padded)
+          b     Bit string (LSB first)
+          B     Bit string (MSB first)
+          h     Hex string (low nibble first)
+          H     Hex string (high nibble first)
+          c     char
+          C     unsigned char
+          s     short
+          S     unsigned short
+          i     int
+          I     unsigned int
+          l     long
+          L     unsigned int
+          n     network-order short
+          N     network-order long
+          f     single-precision float (machine dependent)
+          d     double-precision float (machine dependent)
+          x     null byte
+          X     move back 1 byte
+          @     absolute position
+
+   pop
+
+        Removes and returns the last element of the array.
+
+   rassoc(value)
+
+        Searches an associative list (2-element arrays) and returns the array whose
+        second element equals value ("==" comparison).
+
+   shift
+
+        Removes and returns the first element of the array.
+
+   sort
+
+        Sorts the array.
+        When called as an iterator, sorts using the block's return value: positive if greater, 0 if equal, negative if lesser.
+        When called normally, compares elements using `<=>`.
+
+   to_a
+
+  Returns self. Provided for symmetry; not very interesting.
+
+   unshift(obj)
+
+        Inserts obj at the beginning of the array.
+
+*** Bignum (Class)
+
+Class for arbitrarily large integers.
+When the result of an operation fits within Fixnum's range, it is automatically converted to Fixnum.
+In general, Ruby converts between Fixnum and Bignum implicitly, so the user usually need not care.
+When mixed with Float, although Float has higher genericity, Bignum can represent larger values,
+so conversion may cause loss of precision.
+
+SuperClass: Integer
+
+Methods:
+
+   self + other
+   self - other
+   self * other
+   self / other
+   self % other
+   self ** other
+
+        Arithmetic operations: addition, subtraction, multiplication, division, modulo, exponentiation.
+
+   ~ self
+   self | other
+   self & other
+   self ^ other
+
+        Bitwise operations: bitwise NOT, OR, AND, XOR.
+
+   self << bits
+   self >> bits
+
+        Shift operations: shift bits left or right.
+
+   divmod(other)
+
+  Returns a 2-element array containing quotient and remainder.
+
+*** Class (Class)
+
+The class of classes. More precisely, because classes inherit singleton methods,
+each class has a corresponding anonymous class called a metaclass,
+and Class is the class of these metaclasses (confusing, isn't it?).
+But even if you don't understand this explanation, it won't hinder your use of Ruby.
+
+SuperClass: Module
+
+Methods:
+
+   attr(name[, public])
+
+  Defines an attribute named name for instances of the class.
+  For details, see Module's attr method.
+
+   new(...)
+
+        Creates an instance of the class.
+        Often overridden by subclasses' singleton methods, and arguments vary by class.
+
+*** Comparable (Module)
+
+ A mixin for classes that allow comparison.
+ By including this module and defining `<=>`, other comparison operators are derived automatically.
+
+Methods:
+
+   self > other
+
+        Returns true if self is greater than other.
+
+   self >= other
+
+        Returns true if self is greater than or equal to other.
+
+   self < other
+
+        Returns true if self is less than other.
+
+   self <= other
+
+        Returns true if self is less than or equal to other.
+
+   between(min, max)
+
+        Returns true if self lies within the range min to max.
+
+*** DBM (Class)
+
+A class for accessing NDBM files.
+Except for the restriction that keys and data must be strings, and that data is stored in a file,
+it behaves like Dict.
+On systems without NDBM, accessing this class raises an exception.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self [key]
+
+        Returns the value associated with key.
+
+   self [key]= value
+
+        Stores value under key.
+        If value is nil, deletes the entry for key.
+
+   clear
+
+  Empties the DBM file.
+
+   close
+
+        Closes the DBM file. Further operations raise exceptions.
+
+   delete(key)
+
+        Deletes the entry for key.
+
+   delete_if
+
+  Iterator that deletes items when the block, given [key, value], evaluates to true.
+
+   each
+   each_value
+
+        Iterator for all values.
+
+   each_key
+
+        Iterator for all keys.
+
+   each_pair
+
+        Yields arrays of [key, value].
+
+   includes(key)
+   has_key(key)
+
+        Returns true if key exists.
+
+   has_value(value)
+
+        Returns true if a pair with the given value exists.
+
+   keys
+
+        Returns an array of all keys.
+
+   length
+
+  Returns the number of elements in the database.
+  (Note: Current implementation counts by scanning the entire database, so it's expensive.)
+
+   to_a
+
+  Returns an array of all key-value pairs.
+
+   values
+
+        Returns an array of all values in the database.
+
+Single Methods:
+
+   open(dbname[, mode])
+
+        Opens the database named dbname with mode.
+        Default mode is 0666.
+        If mode is nil and the database does not already exist, it is not created and nil is returned.
+
+*** Dict (Class)
+
+A dictionary or associative array. A class for arrays indexed by arbitrary objects.
+Also accessible as Hash.
+Dictionary objects are usually created with the associative array literal "{a=>b,..}".
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self [key]
+
+        Returns the value associated with key.
+
+   self [key]= value
+
+        Stores value under key.
+        If value is nil, deletes the entry for that key.
+        Thus, Dict cannot store nil as a value.
+
+   clear
+
+  Empties the dictionary.
+
+   delete(key)
+
+        Deletes the entry for key.
+
+   delete_if
+
+  Iterator that deletes items when the block, given [key, value], evaluates to true.
+
+   each
+   each_value
+
+        Iterator for all values.
+
+   each_key
+
+        Iterator for all keys.
+
+   each_pair
+
+        Yields arrays of [key, value].
+
+   includes(key)
+   has_key(key)
+
+        Returns true if key exists.
+
+   has_value(value)
+
+        Returns true if a pair with the given value exists.
+
+   keys
+
+        Returns an array of all keys.
+
+   length
+
+  Returns the number of elements in the dictionary.
+
+   to_a
+
+  Returns an array of all key-value pairs.
+
+   values
+
+        Returns an array of all values.
+
+Single Methods:
+
+   new
+
+        Returns a new (empty) dictionary object.
+
+*** Directory (Class)
+
+A class for directory stream operations that return directory entries sequentially.
+Also accessible as Dir.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   close
+
+        Closes the directory stream. Further operations raise exceptions.
+
+   each
+
+        Iterator yielding each entry in the directory.
+
+   getwd
+   pwd
+
+        Returns the current directory.
+
+   rewind
+
+        Resets the directory stream to the beginning.
+
+   seek(pos)
+
+        Sets the directory stream to position pos.
+
+   tell
+
+        Returns the current position in the directory stream.
+
+Single Methods:
+
+   chdir(path)
+
+        Changes the current directory to path.
+
+   chroot(path)
+
+        Changes the process's root directory, same as the system call of the same name.
+        Only allowed when effective uid is superuser.
+        There is no way to restore the original root directory.
+
+   mkdir(path[, mode])
+
+        Creates directory path with mode.
+        Mode is modified by umask. Default is 0777.
+
+   open(path)
+
+        Opens a directory stream for path.
+
+   rmdir(path)
+
+        Removes the directory specified by path. Directory must be empty.
+
+*** Enumerable (Module)
+
+Mixin for classes that perform repetition over elements.
+To include this module, the class must define the method `each`.
+
+Methods:
+
+   collect
+
+        Returns an array containing the results of evaluating the block for each element.
+
+   find
+
+        Returns the first element for which the block evaluates to true.
+
+   find_all
+
+        Returns an array of all elements for which the block evaluates to true.
+
+   grep(pattern)
+
+        Returns an array of all elements for which "pattern =~ element" is true.
+        When used as an iterator, executes the block for matching elements.
+
+   includes(val)
+
+  Returns true if an element equal to val (by `==`) exists.
+
+   index(val)
+
+  Returns the index of the first object equal to val by `==`.
+  Indices start at 0. Returns nil if not found.
+  Not very meaningful for unordered classes.
+
+   min
+
+  Returns the smallest element. Assumes elements implement `<=>`.
+
+   max
+
+  Returns the largest element. Assumes elements implement `<=>`.
+
+   reverse
+
+        Returns an array with all elements in reverse order.
+
+   sort
+
+        Returns an array with all elements sorted.
+
+*** EnvDict(Class)
+
+Class for manipulating environment variables. A single instance is assigned
+to the system variable $ENV.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   [name]
+
+  Returns the value of the environment variable.
+
+   [name]= val
+
+  Sets the value of the environment variable to val. If val is specified
+  as nil, the corresponding environment variable is deleted.
+
+   delete(name)
+
+  Deletes the environment variable.
+
+   each
+
+  Iterator that yields pairs of environment variable names and values.
+
+*** Etc(Module)
+
+/etc directory access module. Can also be included in classes.
+
+Methods:
+Single Methods:
+
+   getlogin
+
+  Returns your login name. If this fails, use getpwuid().
+
+   getpwnam(name)
+
+  Searches the /etc/passwd file (or DBM file or NIS database) and
+  returns the passwd entry with the specified name. The return value
+  is a passwd struct with the following members:
+
+    struct passwd
+      name  # User name (string)
+      passwd  # Password (string)
+      uid   # User ID (integer)
+      gid   # Group ID (integer)
+      gecos # GECOS field (string)
+      dir   # Home directory (string)
+      shell # Login shell (string)
+      # The following members may not exist on all systems
+      change  # Password change time (integer)
+      quota # Quota (integer)
+      age   # Age (integer)
+      class # User access class (string)
+      comment # Comment (string)
+      expire  # Account expiration time (integer)
+    end
+
+  See getpwnam(3) for details.
+
+   getpwuid([uid])
+
+  Returns the passwd entry for the specified user ID (uid). Same return
+  as getpwnam(). If no argument is given, uses getuid(). See getpwuid(3).
+
+   getgrgid(gid)
+
+  Searches /etc/group (or see getpwnam) and returns the group entry
+  with the specified group ID (gid). Return is a group struct with:
+
+    struct group
+      name  # Group name (string)
+      passwd  # Group password (string)
+      gid   # Group ID (integer)
+      mem   # Array of group member names
+    end
+
+  See getgrgid(3) for details.
+
+   getgrnam(name)
+
+  Returns the group entry with the given name. Same return as getgrgid().
+  See getgrnam(3).
+
+   group
+
+  Iterator for accessing all group entries sequentially.
+
+   passwd
+
+  Iterator for accessing all passwd entries sequentially.
+
+*** File(Class)
+
+Class for file access. Instances are created with the class method open().
+Class methods equivalent to file test operators are also defined.
+
+SuperClass: IO
+
+Methods:
+
+   atime
+
+        Returns the last access time of the file.
+
+   ctime
+
+        Returns the last status change time of the file.
+
+   chmod(mode)
+
+        Changes file permissions (cf chmod(2)).
+
+   chmod(owner, group)
+
+        Changes the owner and group of the file (cf chown(2)). Specifying nil
+  or -1 keeps owner or group unchanged.
+
+   eof
+
+        Returns true if end-of-file is reached.
+
+   lstat
+
+        Returns a Stat struct for the file. If the file is a symbolic link,
+        lstat returns information about the link itself. See stat for details.
+
+   mtime
+
+        Returns the last modification time of the file.
+
+   rewind
+
+        Moves the file pointer to the beginning.
+
+   path
+
+        Returns the file path.
+
+   seek(offset, ptrname)
+
+        Moves the file pointer to offset. ptrname is 0, 1, or 2, indicating
+        offset from the beginning, current position, or end of file.
+
+   stat()
+
+        Returns a Stat struct for the file (see Struct).
+
+    struct stat
+      dev   # Device containing the file
+      ino   # i-node number
+      mode  # Mode
+      nlink # Number of hard links
+      uid   # Owner's user ID
+      gid   # Owner's group ID
+      rdev  # Device ID (special files only)
+      size  # File size (bytes)
+      blksize # Optimal block size for filesystem
+      blocks  # Number of blocks
+      atime # Last access time
+      mtime # Last modification time
+      ctime # Last status change time
+    end
+
+  See fstat(2) for details. Members not present in the system stat struct
+  are set to 0.
+
+   tell
+
+        Returns the current file pointer position.
+
+   truncate(length)
+
+        Truncates the file to at most length bytes. File must be open in write mode.
+
+Single Methods:
+
+   atime(filename)
+
+        Returns the last access time of filename.
+
+   b(filename)
+
+        Returns true if filename is a block special file.
+
+   c(filename)
+
+        Returns true if filename is a character special file.
+
+   ctime(filename)
+
+        Returns the last status change time of filename.
+
+   chmod(mode, path, file...)
+
+        Changes file permissions (cf chmod(2)).
+
+   chown(owner, group, file...)
+
+        Changes file owner and group (cf chown(2)). Use nil or -1 to leave unchanged.
+
+   executable(filename)
+   x(filename)
+
+        Returns true if filename is executable.
+
+   exists(filename)
+   e(filename)
+   a(filename)
+
+        Returns true if filename exists.
+
+   G(filename)
+
+        Returns true if filename's group ID matches effective GID.
+
+   isdirectory(filename)
+   d(filename)
+
+        Returns true if filename is a directory.
+
+   isfile(filename)
+   f(filename)
+
+        Returns true if filename is a regular file.
+
+   islink(filename)
+   l(filename)
+
+        Returns true if filename is a symbolic link.
+
+   ispipe(filename)
+   p(filename)
+
+        Returns true if filename is a named pipe (FIFO).
+
+   issocket(filename)
+   S(filename)
+
+        Returns true if filename is a socket.
+
+   link(old, new)
+
+        Creates a hard link new to old. Same restrictions as link(2).
+
+   mtime(filename)
+
+        Returns the last modification time of filename.
+
+   owned(filename)
+   O(filename)
+
+        Returns true if filename is owned by effective user.
+
+   readable(filename)
+   r(filename)
+
+        Returns true if filename is readable.
+
+   readlink(path)
+
+        Returns the content of symbolic link path as a string.
+
+   rename(from, to)
+
+        Renames file from to to. Existing file to is deleted first.
+
+   R(filename)
+
+        Returns true if filename is readable by effective UID/GID.
+
+   setuid(filename)
+   u(filename)
+
+        Returns true if filename has setuid bit set.
+
+   setuid(filename)
+   g(filename)
+
+        Returns true if filename has setgid bit set.
+
+   size(filename)
+   s(filename)
+
+        Returns file size if filename exists, nil if not.
+
+   sticky(filename)
+   g(filename)
+
+        Returns true if filename has sticky bit set.
+
+   symlink(old, new)
+
+        Creates a symbolic link new to old.
+
+   truncate(path, length)
+
+        Truncates file path to at most length bytes.
+
+   unlink(file...)
+
+        Deletes files. Use Dir.rmdir to delete directories.
+
+   utime(atime, mtime, file...)
+
+        Sets file access time to atime and modification time to mtime.
+  atime and mtime must be numbers or Time instances.
+
+   writable(filename)
+   w(filename)
+
+        Returns true if filename is writable by effective UID/GID.
+
+   W(filename)
+
+        Returns true if filename is writable.
+
+   z(filename)
+
+        Returns true if filename exists and has size 0.
+
+*** Fixnum(Class)
+
+Class for 31-bit integers. Builtin class. This class is immediate in the pointer
+and therefore is call-by-value (other classes are call-by-reference). Results
+exceeding 31 bits automatically become Bignum.
+
+Iterators upto(), downto(), step() are used for repetition and are generally
+faster than using Range.
+
+SuperClass: Integer
+
+Methods:
+
+   self + other
+   self - other
+   self * other
+   self / other
+   self % other
+   self ** other
+
+        Arithmetic operations: sum, difference, product, quotient, remainder, power.
+
+   ~ self
+   self | other
+   self & other
+   self ^ other
+
+        Bit operations: bitwise NOT, OR, AND, XOR.
+
+   self << bits
+   self >> bits
+
+        Shift operations: shift bits left or right.
+
+   self .. max
+
+        Range specification: returns a range object from self to max.
+
+   downto(min)
+
+        Iterator: counts down from self to min.
+
+   id2name
+
+  Returns string corresponding to integer ID, nil if none exists.
+
+   step(max, step)
+
+        Iterator: iterates from self to max in steps of step.
+
+   to_f
+
+        Converts self to Float.
+
+   to_i
+
+        Returns self.
+
+   upto(max)
+
+        Iterator: counts up from self to max.
+
+*** Float(Class)
+
+Class for floating-point numbers.
+
+SuperClass: Numeric
+
+Methods:
+
+   self + other
+   self - other
+   self * other
+   self / other
+   self % other
+   self ** other
+
+        Arithmetic: sum, difference, product, quotient, remainder, power.
+
+   self == other
+   self > other
+
+        Comparison.
+
+   coerce(num)
+
+        Converts num to float. Currently only Fixnum is understood.
+
+   to_f
+
+        Returns self.
+
+   to_i
+
+        Converts float to integer.
+
+Single Methods:
+
+   new(float)
+
+        Returns a new Float object with the same value as float.
+
+*** GC(Module)
+
+Module for controlling Ruby's built-in garbage collector. Using its methods,
+you can temporarily disable GC or control its timing.
+
+GC also calls start_hook when starting and end_hook when finishing, so
+defining these methods allows hooks.
+
+Methods:
+
+   garbage_collect                                              +
+
+        Starts GC. Same as "GC.start".
+
+Single Methods:
+
+   disable
+
+        Disables GC.
+
+   enable
+
+        Enables GC.
+
+   start
+
+        Starts GC.
+
+   threshold
+
+        Returns current threshold for triggering GC.
+
+   threshold=(val)
+
+        Sets GC threshold. Returns old value.
+
+   start_hook
+   end_hook
+
+        Called at GC start and end. Default methods do nothing.
+
+*** Integer(Class)
+
+Integer class. Implemented with two subclasses Fixnum and Bignum depending
+on size. Integer is the abstract superclass. Conversion between Fixnum and
+Bignum is automatic. Consider integers as infinite-length bit sequences.
+
+SuperClass: Numeric
+
+Methods:
+
+   self[idx]
+
+  Returns 1 if the idx-th bit is set, 0 otherwise.
+
+   chr
+
+  Returns a 1-character string corresponding to the code. For strings
+  with length >= 1, the following always holds:
+
+    str[0].chr == str[0,1]
+
+  Raises an exception if integer is outside 0..255.
+
+   is_integer
+
+  Always returns true.
+
+*** IO(Class)
+
+Base class for input/output.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self << object
+
+        Outputs object. Converts to string via to_s if necessary.
+  Returns self, allowing chaining like C++.
+
+        Example:
+
+            $stdout << 1 << " is a " << Fixnum
+
+   close
+
+        Closes IO port. Further operations on this object raise errors.
+
+   each
+
+        Iterator to read line by line. Line separator is $/. Sets $_ as well.
+
+   each_byte()
+
+        Iterator to read byte by byte. Returns Fixnum representing character code.
+
+   fileno
+
+        Returns the file descriptor (Fixnum) of IO object.
+
+   flush
+
+        Flushes buffer.
+
+   getc
+
+        Reads one character. Returns string or nil at EOF. Functional method
+        getc() is same as $stdin.getc.
+
+   gets
+
+        Reads one line. Returns string or nil at EOF.
+
+   isatty
+
+        Returns true if IO port is a tty.
+
+   puts(obj)
+
+        Outputs obj. Same as "self << obj".
+
+   read([length])
+
+        Reads length bytes. If omitted, reads all data.
+
+   sync
+
+  Returns current output sync mode as boolean. True flushes buffer each call.
+
+   sync=(newstate)
+
+        Sets output sync mode.
+
+   sysread(length)
+
+        Reads using read(2) without stdio. Returns string or nil at EOF.
+  May not read exactly length bytes. Mixing with stdio methods may misbehave.
+
+   syswrite(str)
+
+        Writes using write(2) without stdio buffering. Mixing with print()/printf()
+        not recommended.
+
+   write(str)
+
+        Writes str. Returns number of bytes written.
+
+Single Methods:
+
+   default
+
+  Returns default output for print/printf. Initially $stdout.
+
+   default=
+
+  Sets default output.
+
+*** Kernel(Class)
+
+Base class of all classes. All built-in functional methods are defined here.
+
+SuperClass: none
+
+Methods:
+
+   ! self
+
+        Negation. Non-nil objects return false. Redefined in Nil class to return true.
+
+   equal(other)
+   self == other
+
+        Object equality. Returns true if receiver and argument are the same object.
+  "==" can be redefined per object. Re-define hash if "==" redefined.
+  equal() is alias for "==", preserves identity; should not be redefined in subclasses.
+
+   self != other
+
+        Negation of "==". Calls "==", no need to redefine.
+
+   self =~ other
+
+        Match. Default same as "==". Used in case comparisons.
+
+   !~
+
+        Negation of "=~". Internally calls the "=~" method, so redefining
+        it is unnecessary.
+
+   self :: other
+
+        Returns an array of length 2 containing self and other. This
+        works the same as [self, other] in the sense of generating
+        an array, but is slightly more efficient. Since this operator
+        is right-associative, a::b::c is interpreted as (a::(b::c)).
+
+   is_nil
+
+        Checks whether the object is nil. In the Kernel class definition,
+        it returns true. It is redefined in the Nil class.
+
+   id
+
+        Returns a unique Fixnum for each object. However, since Fixnum
+        returns itself, even if ids match, it does not guarantee that
+        the objects are identical. That is,
+
+    obj1.id == obj2.id
+
+        may be true, but if either is a Fixnum, obj1 and obj2 are not
+        necessarily the same object. If both are guaranteed not to be
+        Fixnum, then identity is guaranteed.
+
+   hash
+
+        Returns the hash value (Fixnum) of the object. Used in Dict
+        class to store objects as keys. When redefining "==", this
+        should also be redefined accordingly since "A == B" requires
+        that "A.hash == B.hash" is true.
+
+*** Math(Module)
+
+Class supporting floating-point operations. The Math module defines
+both regular and singleton methods, so it can be used either by
+calling the singleton methods or by including it in a class.
+
+  Example:
+
+        pi = Math.atan2(1, 1) * 4;
+        include Math
+        pi2 = atan2(1, 1)
+
+Methods:
+Single Methods:
+
+   atan2(x, y)
+
+        Returns the arctangent of X/Y in the range π to -π.
+
+   cos(x)
+   sin(x)
+   tan(x)
+
+        Returns the trigonometric value of x expressed in radians.
+
+   exp(x)
+
+        Returns the exponential of x.
+
+   log(x)
+
+        Returns the natural logarithm of x.
+
+   log10(x)
+
+        Returns the base-10 logarithm of x.
+
+   sqrt(x)
+
+        Returns the square root of x. Raises an exception if x is negative.
+
+   cbrt(x)
+
+        Returns the cube root of x.
+
+*** Module(Class)
+
+The class of modules.
+
+SuperClass: Object
+
+Methods:
+
+   attr(name[, public])           +
+
+        Adds an attribute specified by name to instances of classes
+        that include the module and defines accessor methods. attr("attr")
+        is roughly equivalent to the following code:
+
+          def attr; @attr; end
+
+        If an optional second argument public is provided and is not nil,
+        a setter method is also provided, making the attribute assignable
+        externally. attr("attr", %TRUE) is roughly equivalent to:
+
+          def attr; @attr; end
+          def attr=(val); @attr = val; end
+
+        By redefining the methods composing the attribute, behavior can
+        be customized. For example:
+
+          attr("test", %TRUE)
+          def test=(val)
+            print("test was ", @test, "\n")
+            print("and now is ", @test = val, "\n")
+          end
+
+        Attr does not define default accessor methods if they already exist.
+
+   to_s
+
+        Returns the string representation of the module, which is the
+        module name in this case.
+
+*** Nil(Class)
+
+Class of the object nil, representing false. The false variable nil
+is the sole instance of the Nil class. Nil class accepts comparison
+methods to allow chained comparisons, such as
+
+        10 < a < 13
+
+Comparison operator methods return nil on failure and the right-hand
+object on success, allowing chained comparisons to work correctly.
+
+SuperClass: Kernel
+
+Methods:
+
+   self + other
+
+        Returns other if it is an integer, float, string, or array.
+        Designed for self-assignment of uninitialized arguments:
+
+          foo        # value is nil
+          foo += 1   # foo becomes 1
+
+   self >  other
+   self >= other
+   self <  other
+   self <= other
+
+        Methods for chained comparisons. Always return nil.
+
+   ! self
+
+        Always returns true.
+
+   is_nil
+
+        Always returns true.
+
+*** Numeric(Class)
+
+Abstract class representing general numeric properties.
+
+SuperClass: Object
+
+Included Modules: Comparable
+
+Methods:
+
+   + self
+
+        Returns the object self itself.
+
+   - self
+
+        Returns "0 - self". Expected to be redefined more efficiently in subclasses.
+
+   abs
+
+        Returns the absolute value.
+
+   divmod(other)
+
+        Returns a 2-element array containing quotient and remainder.
+
+*** Object(Class)
+
+Superclass of all normal classes. The only classes not subclasses
+of this are Kernel and Nil.
+
+SuperClass: Kernel
+
+Methods:
+
+   is_member_of(class)
+
+        Returns true if self is an instance of class.
+
+   is_kind_of(class)
+
+        Returns true if self is an instance of class or its subclass.
+
+   clone
+
+        Creates a copy of the object. For non-Fixnum classes, obj.equal(obj.clone)
+        is probably false, but obj == obj.clone is usually true.
+
+   to_s
+
+        Returns the string representation of the object, used internally
+        by print() and format().
+
+   to_a
+
+        Converts the object to an array. Default implementation returns
+        a single-element array containing the object itself.
+
+*** Process(Module)
+
+Module for process-related operations. All methods can be used as
+singleton or regular methods. Note that Process is a collection
+of process manipulation methods, not a process object class.
+
+Methods:
+Single Methods:
+
+   euid
+
+        Returns the current effective UID of the process.
+
+   euid=(uid)
+
+        Sets the process's effective UID to uid.
+
+   getpgrp([pid])
+
+        Returns the process group id of the process specified by pid.
+        If pid is omitted or 0, it applies to the current process.
+
+   getpriority(which, who)
+
+        Returns the current priority of the process, group, or user
+        specified by which and who. See getpriority(2) for details.
+        Constants %PRIO_PROCESS, %PRIO_PGRP, %PRIO_USER are defined
+        in the Process module.
+
+   pid
+
+        Returns the process ID of the process, same as system variable `$$'.
+
+   ppid
+
+        Returns the parent process ID. In UNIX, if the immediate parent
+        exits, the parent PID becomes 1 (init).
+
+   setpgrp(pid, pgrp)
+
+        Sets the process group of the process specified by pid to pgrp.
+        If pid is 0, applies to the current process.
+
+   setpriority(which, who, prio)
+
+        Sets the priority of the process, group, or user specified by
+        which and who to prio. See setpriority(2) for details.
+
+   uid
+
+        Returns the current real UID of the process.
+
+   uid=
+
+        Sets the process's real UID to uid.
+
+*** Range(Class)
+
+Class for range objects, generated by the `..' operator. Common usage:
+
+        for i in 1..5
+          ...
+        end
+
+However, this is faster:
+
+        do 1.upto(5)
+          ...
+        end
+
+Both operands of the `..' operator must be instances of classes
+including Comparable. The range includes both start and end points.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self =~ other
+
+        Returns true if self is a range of the same class as other
+        and contains other (start <= other <= end). Useful for
+        case statements, e.g.,
+
+            case i
+              when 1, 3..5
+                ...
+            end case
+
+   each
+
+        Iterator that yields objects in the range. Mainly used
+        for for-loops.
+
+   end
+
+        Returns the end of the range.
+
+   start
+
+        Returns the start of the range.
+
+*** Socket(Class)
+
+SuperClass: BasicSocket
+
+Class providing system-call level access to sockets, equivalent
+to Perl socket access. Socket addresses are specified as
+packed strings. UDP sockets use this class.
+
+Methods:
+
+   accept
+
+        Accepts a new connection and returns the socket for it.
+        See accept(2).
+
+   bind(addr)
+
+        Works like bind(2). addr is a packed socket address structure.
+
+   connect(addr)
+
+        Works like connect(2). addr is a packed socket address structure.
+
+   listen(backlog)
+
+        Works like listen(2).
+
+   recv(len, flags)
+   send(mesg, flags[, to])
+   sysread(len)
+
+Single Methods:
+
+   open(domain, type, protocol)
+   new(domain, type, protocol)
+
+        Creates a new socket. domain, type, protocol are specified
+        by constants defined in include files. domain and type
+        can be specified as strings but may not cover all cases.
+
+   socketpair(domain, type, protocol)
+
+        Creates a pair of sockets and returns them as a 2-element
+        array. Arguments same as open.
+
+*** Regexp(Class)
+
+Class for regular expressions. Literals are expressed as /.../,
+or dynamically with:
+
+        Regexp.compile(string)
+
+Many String class methods internally generate a regexp if a string
+is given, so explicit compilation is rarely needed.
+
+SuperClass: Object
+
+Methods:
+
+   self =~ string
+
+        Returns the match position if the regexp matches the string,
+        otherwise returns nil.
+
+   ~ self
+
+        Equivalent to "$_ =~ self".
+
+Single Methods:
+
+   complie(string)
+
+        Returns an object converting the string to a regular expression.
+
+*** BasicSocket(Class)
+
+Abstract class representing a socket. Specific socket operations
+are defined in subclasses, e.g., TCPsocket for the Internet domain.
+
+SuperClass: IO
+
+Methods:
+
+   getopt(level, optname)
+
+        Retrieves socket options. See getsockopt(2). Returns a string
+        containing the option value.
+
+   getpeername
+
+        Returns the socket information of the peer. Returns a string
+        dump of packed sockaddr structure. See getpeername(2).
+
+   getsockname
+
+        Returns the socket information. Returns a string dump of packed
+        sockaddr structure. See getsockname(2).
+
+   setopt(level, optname, optval)
+
+        Sets a socket option. See setsockopt(2).
+
+   shutdown(how)
+
+        Ends further socket connections. If how=0, further receives
+        are refused; if how=1, further sends are refused; if how=2,
+        both send and receive are refused.
+
+*** String(class)
+
+String class. Ruby strings are not null-terminated, so binary data can also be handled. Therefore, they are more like byte sequences than just ordinary strings. Based on this philosophy, methods unrelated to regular expressions do not consider 2-byte characters. This is intentional, not the author's laziness (believe it).
+
+SuperClass: Object
+
+Included Modules: Comparable, Enumerable
+
+Methods:
+
+   self + other
+
+        Concatenates strings. Returns the concatenated string.
+
+   self * times
+
+        Repeats the string. For example,
+
+            "x" * 4 == "xxxx"
+
+   self == other
+   self > other
+
+        Compares strings. When the system variable $= is not nil, comparison is case-insensitive.
+
+   self =~ other
+
+        Matches the string. `other` can be a regular expression or a string. If `other` is a string, it is dynamically converted to a regular expression. Returns the match position if matched, nil if not.
+
+   ~ self
+
+        Equivalent to `$_ =~ self`.
+
+   self[nth]
+   self[beg..end]
+   self[beg,len]
+
+        Extracts content. In the first form, returns the nth byte as a Fixnum. In the second form, returns the substring from beg byte to end byte (inclusive). In the third form, returns the substring from beg byte for len bytes.
+
+   self[nth] = val
+   self[beg..end] = val
+   self[beg,len] = val
+
+        Updates content. In the first form, replaces the nth byte with val (integer). In the second form, replaces the substring from beg byte to end byte with the given string val. In the third form, replaces the substring from beg byte for len bytes with the given string val.
+
+   chop
+
+        Removes the last byte of the string.
+
+   crypt(salt)
+
+        Returns the string encrypted using crypt(3). `salt` is any string of at least 2 bytes.
+
+   delete(str)
+
+  Deletes characters in `str` from the string. Character specification works like `tr`. `a-b` specifies a range, and a leading `^` means negation (characters not included).
+
+   each
+
+        Iterator that reads the string line by line.
+
+   each_byte
+
+        Iterator that iterates over each byte of the string.
+
+   gsub(pattern, replace)
+
+        Replaces all matches of pattern in the string with replace. In replace, & and \0 are replaced with the matched string; \1..\9 are replaced with the contents of the corresponding capture groups.
+
+   hex
+
+        Interprets the string as a hexadecimal number and converts it to an integer.
+
+   index(substr[, pos])
+
+        Returns the position of the first occurrence of substr. If pos is given, search starts from that position. Returns nil if not found.
+
+   intern
+
+  Returns a unique integer corresponding to the string. The string cannot contain null characters.
+
+   lcfirst
+
+  Converts the first character of the string to lowercase (if it is an alphabet).
+
+   length
+
+        Returns the length of the string (in bytes).
+
+   next
+
+        Returns the "next" string. Numbers increment as numbers, letters increment as letters, carrying over as necessary.
+
+                "aa".next == "ab"
+                "99".next == "100"
+                "a9".next == "b0"
+
+        This method is used in Range:each, so the following is possible:
+
+                for i in "a" .. "ba"
+                  print(i, "\n");
+                end
+
+        Outputs each string from a, b, c, .. aa, .. az, ba.
+
+        Note: The end condition is determined using `==`, not comparison operators. If the right-hand string does not include the next string of the left-hand side, as in the example below, it will loop infinitely:
+
+                for i in "0" .. "1a"
+                  print(i, "\n");
+                end
+
+        Some may speculate that the author wrote it this way to avoid responsibility. That speculation is correct.
+
+   oct
+
+        Interprets the string as an octal number and converts it to an integer. Only strings matching /[0-7]+/ are valid; others return 0. Unlike Perl, strings starting with 0x are not automatically considered hexadecimal.
+
+   reverse
+
+        Returns the string with bytes reversed. Ignores multi-byte characters. To reverse by character for multi-byte strings:
+
+                "全角文字列".split(//).reverse.join("")
+
+   rindex(substr[, pos])
+
+        Returns the position of the last occurrence of substr. If pos is given, the search stops at that position. Returns nil if not found. Differences from index: searches from the end, does not accept regex.
+
+   split([sep[, limit]])
+
+        Splits the string into fields using sep. If sep is omitted, defaults to system variable `$;`. If limit is given, splits into at most limit fields. Returns an array. If sep matches an empty string, splits by each character.
+
+   squeeze([str])
+
+  Reduces consecutive occurrences of characters in str to one. If str is omitted, applies to all characters. Works like `tr`. `a-b` specifies a range, `^` negates.
+
+   strip
+
+  Removes leading and trailing whitespace.
+
+   sub(pattern, replace)
+
+        Replaces the first match of pattern with replace. & and \0 in replace are replaced with the matched string, \1..\9 with capture groups.
+
+   to_f
+
+        Converts string to Float.
+
+   to_i
+
+        Converts string to integer, interpreting as decimal.
+
+   toupper
+   uc
+
+        Converts all letters to uppercase. Modifies the original string. Slightly faster than tr("a-z", "A-Z").
+
+   tolower
+   lc
+
+        Converts all letters to lowercase. Modifies the original string. Slightly faster than tr("A-Z", "a-z").
+
+   tr(search, replace)
+
+        Replaces characters in search with corresponding characters in replace. If replace is omitted, treated as empty. If replace is shorter, last character is repeated. If search is shorter, unmatched replace characters are ignored (BSD behavior).
+
+  If `a-b` appears in search or replace, it represents a range in ASCII order. If search starts with `^`, matches characters *not* in the range.
+
+  Methods for deletion and squeezing are split into `delete` and `squeeze`. `tr_s(src,repl)` is equivalent to `str.tr(src,repl).squeeze(repl)`.
+
+   ucfirst
+
+  Converts the first character of the string to uppercase (if alphabet).
+
+   unpack(template)
+
+        Unpacks the string according to template and returns an array. Template follows Array#pack conventions:
+
+          a     ASCII string (keeps trailing nulls/spaces)
+          A     ASCII string (removes trailing nulls/spaces)
+          b     Bit string (LSB first)
+          B     Bit string (MSB first)
+          h     Hex string (LSB first)
+          H     Hex string (MSB first)
+          c     char
+          C     unsigned char
+          s     sort
+          S     unsigned sort
+          i     int
+          I     unsigned int
+          l     long
+          L     unsigned int
+          n     network order short
+          N     network order long
+          f     float (platform dependent)
+          d     double (platform dependent)
+          x     skip 1 byte
+          X     back up 1 byte
+          @     move to absolute position
+
+Single Methods:
+
+   new(string)
+
+  Returns a new string with the same content.
+
+*** Struct(class)
+
+Struct class. Used to group multiple pieces of data (e.g., Time::times). Arrays can sometimes be used (e.g., select), but structs are better when:
+
+  (1) Many elements
+
+      Hypothesis: humans can comfortably handle up to 7 concepts at once. If there are 4+ elements, using an array may exceed 7 elements*2 (offset + meaning). In such cases, structs are easier to understand.
+
+  (2) Not generated in large quantities simultaneously
+
+      Struct creation has slightly higher cost than arrays. If performance is critical (e.g., large simultaneous creation), arrays may be more appropriate.
+
+Each struct has member methods with the same name as its members.
+
+In this documentation, structs are represented as:
+
+  struct StructName
+    Member ...
+  end
+
+However, this form is not used to create structs in code.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self[idx]
+
+  Returns the idx-th element if idx is a number. If idx is a string, returns the member with that name.
+
+   values
+
+  Returns an array of struct member values. For example, to print your passwd entry:
+
+    print(Etc.getpwuid().values.join(":"), "\n")
+
+  This output is identical to `grep "$USER" /etc/passwd` except for some extra fields (system dependent).
+
+Single Methods:
+
+   new(name, member::value...)
+
+  Creates a struct with the given name. member is the struct's member name, value its value. Generated struct defines singleton methods with the member names to access their values.
+
+*** TCPserver(class)
+
+TCP/IP stream server socket class. Makes server programming with sockets simple. Example echo server:
+
+ gs = TCPserver.open(4444)
+ socks = [gs]
+
+ while %TRUE
+   nsock = select(socks);
+   if nsock == nil; continue end
+   for s in nsock[0]
+     if s == gs
+       socks.push(s.accept)
+     else
+       if s.eof
+   s.close
+   socks.delete(s)
+       else
+   str = s.gets
+   s.write(str)
+       end
+     end
+   end
+ end
+
+SuperClass: TCPsocket
+
+Methods:
+
+   accept
+
+  Accepts a client connection and returns a TCPsocket instance.
+
+Single Methods:
+
+   new([host, ]service)
+   open([host, ]service)
+
+  service is a service name or port from /etc/services (or NIS). Specifying host restricts connections to that host. Omitting host accepts all hosts.
+
+*** TCPsocket
+
+Internet domain stream socket class. Works like an IO subclass. Enables easy client programming. Example forwarding user input to server:
+
+ s = TCPsocket("localhost", 4444)
+ while gets()
+   s.write($_)
+   print(s.read)
+ end
+
+SuperClass: BasicSocket
+
+Methods:
+
+   addr
+
+  Returns an array representing socket connection info. First element: "AF_INET", second: port, third: host string.
+
+   peeraddr
+
+  Returns array representing peer socket info, same format as addr.
+
+Single Methods:
+
+   open(host, service)
+   new(host, service)
+
+  Returns a socket connected to service at host. host: hostname or IP string, service: service name or port.
+
+*** Time(class)
+
+Represents time. Supports comparison. Time.now returns current time. File timestamp methods return Time instances.
+
+SuperClass: Object
+
+Included Modules: Comparable
+
+Methods:
+
+   self == other
+   self > other
+
+        `other` is a Time instance or integer. If integer, interpreted as seconds since 1970-01-01 00:00:00 GMT.
+
+   asctime
+   ctime
+   to_s
+
+        Converts time to date(1) string format.
+
+   gmtime
+
+        Returns GMT time without timezone adjustment. Following calls on this instance use GMT. gmtime returns self.
+
+  To display London time:
+
+    print(Time.now.gmtime, "\n")
+
+   localtime
+
+        Returns local time with timezone adjustment (default). Returns self.
+
+   to_i
+   tv_sec
+
+        Returns seconds since 1970-01-01 00:00:00 GMT. Also the second part of time.
+
+   sec
+   min
+   hour
+   mday
+   year
+   wday
+   yday
+   zone
+   isdst
+
+        Returns internal tm structure content. Except zone, returns integers. zone returns timezone string. (cf localtime(3))
+
+   strftime(format)
+
+        Returns string formatted according to format. Valid format codes:
+
+                %A      Day name (Sunday, Monday,...)
+                %a      Abbreviated day (Sun, Mon,...)
+                %B      Month name (January, February,...)
+                %b      Abbreviated month (Jan, Feb,...)
+                %c      Time representation (cf ctime(3))
+                %d      Day of month (01-31)
+                %H      Hour (24h) (00-23)
+                %I      Hour (12h) (01-12)
+                %j      Day of year (001-366)
+                %M      Minute (00-59)
+                %m      Month number (01-12)
+                %p      AM/PM
+                %S      Second (00-61)
+                %U      Week number (Sunday first, 00-53)
+                %W      Week number (Monday first, 00-53)
+                %w      Weekday number (Sunday=0, 0-6)
+                %X      Time (e.g., 15:01:06)
+                %x      Date (e.g., Fri Jan 14 1994)
+                %Y      Year
+                %y      Year last 2 digits (00-99)
+                %Z      Timezone
+                %%      %
+
+   usec
+   tv_usec
+
+        Returns microsecond part.
+
+Single Methods:
+
+   now
+
+        Generates an instance of the Time class representing the current time.
+
+   at(time)
+
+        Generates an instance of the Time class representing the same time as time.
+        time is either an instance of the Time class or a number (integer/float).
+        In the case of a number, the time is calculated as the number of seconds
+        since 00:00:00 GMT on January 1, 1970.
+
+   times
+
+        Returns the accumulated user/system CPU time consumed by the current process
+        and its child processes as a structure (see Struct).
+
+    struct tms
+      utime # User time of the process
+      stime # System time of the process
+      cutime  # User time of child processes
+      cstime  # System time of child processes
+    end
+
+  Time units are in seconds and are given as floating-point numbers. For details,
+        refer to times(3C).
+
+*** UNIXserver
+
+Class for the server side of UNIX stream-type connections.
+
+SuperClass: UNIXsocket
+
+Methods:
+
+   accept
+
+  Accepts a connection request from a client and returns an instance of
+  UNIXsocket representing the connected client.
+
+*** UNIXsocket
+
+Class for stream-type sockets in the UNIX domain. Can perform I/O similar to
+a regular subclass of the IO class.
+
+SuperClass: BasicSocket
+
+Methods:
+
+   addr
+
+  Returns an array representing the socket's connection information. Each element
+  of the array has the first element as the string "AF_UNIX" and the second element
+  as the path.
+
+   path
+
+  Returns the path of the UNIX socket.
+
+   peeraddr
+
+  Returns an array representing the connected peer socket's information. Each element
+  of the array is the same as the array returned by the addr method.
+
+Single Methods:
+
+   open(path)
+   new(path)
+
+  Returns a socket connected using the path specified by path.
+
+-------------------------------------------------------
+Local variables:
+fill-column: 70
+end:

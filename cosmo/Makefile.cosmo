@@ -1,0 +1,114 @@
+# Makefile for Ruby 0.49 Cosmopolitan build
+# Produces a single APE binary that runs on Linux, macOS, Windows, and FreeBSD
+
+SHELL = /bin/sh
+
+# Cosmopolitan toolchain - adjust path as needed
+TOOLCHAIN = ../toolchain
+CC = $(TOOLCHAIN)/bin/cosmocc
+AR = $(TOOLCHAIN)/bin/cosmoar
+
+# Compiler flags
+CFLAGS = -Os -g
+LDFLAGS = -static
+LIBS = -lm
+
+# Cosmopolitan-specific defines
+# Disable features that aren't portable
+COSMO_DEFS = -D__COSMOPOLITAN__ \
+             -UHAVE_NDBM_H \
+             -UHAVE_A_OUT_H \
+             -UUSE_DBM \
+             -UUSE_DLN
+
+# POSIX/Unix feature defines (Cosmopolitan provides these)
+DEFS = -DHAVE_UNISTD_H=1 \
+       -DDIRENT=1 \
+       -DGETGROUPS_T=gid_t \
+       -DRETSIGTYPE=void \
+       -DHAVE_GETOPT_LONG=1 \
+       -DHAVE_MEMMOVE=1 \
+       -DHAVE_STRERROR=1 \
+       -DHAVE_STRTOUL=1 \
+       -DHAVE_STRDUP=1 \
+       -DHAVE_STRSTR=1 \
+       -DHAVE_SETENV=1 \
+       -DHAVE_FMOD=1 \
+       -DHAVE_KILLPG=1 \
+       -DHAVE_MKDIR=1 \
+       -DHAVE_STRFTIME=1 \
+       -DHAVE_SOCKET=1 \
+       -DHAVE_RANDOM=1 \
+       -DHAVE_WAIT4=1 \
+       -DHAVE_WAITPID=1 \
+       -DHAVE_ALLOCA_H=1 \
+       -DHAVE_ST_BLKSIZE=1 \
+       -DHAVE_ST_BLOCKS=1 \
+       -DHAVE_ST_RDEV=1 \
+       $(COSMO_DEFS)
+
+# Source files (excluding dbm.c which requires ndbm)
+# dln.c is included for dln_find_file but USE_DLN is disabled
+SRCS = array.c \
+       bignum.c \
+       class.c \
+       compar.c \
+       dict.c \
+       dir.c \
+       dln.c \
+       enum.c \
+       error.c \
+       etc.c \
+       eval.c \
+       file.c \
+       gc.c \
+       inits.c \
+       io.c \
+       math.c \
+       methods.c \
+       missing.c \
+       numeric.c \
+       object.c \
+       pack.c \
+       parse.c \
+       process.c \
+       random.c \
+       range.c \
+       re.c \
+       regex.c \
+       ruby.c \
+       socket.c \
+       sprintf.c \
+       st.c \
+       string.c \
+       struct.c \
+       time.c \
+       variable.c \
+       version.c
+
+OBJS = $(SRCS:.c=.o)
+
+PROGRAM = ruby.com
+
+.PHONY: all clean
+
+all: $(PROGRAM)
+
+$(PROGRAM): $(OBJS)
+	@echo "Linking $(PROGRAM)..."
+	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	@echo "Done! $(PROGRAM) is a universal binary."
+
+.c.o:
+	$(CC) -c $(CFLAGS) $(DEFS) -I. $<
+
+# Generate parse.c from parse.y using bison
+parse.c: parse.y
+	bison -y -o parse.c parse.y
+
+clean:
+	rm -f $(OBJS) $(PROGRAM) parse.c y.tab.c
+
+# Test target
+test: $(PROGRAM)
+	./$(PROGRAM) -v

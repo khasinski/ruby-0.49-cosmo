@@ -1,0 +1,731 @@
+Mon Jul 18 10:19:15 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: There was a bug in the rule that handles multiple assignment,
+	  which caused failure when assigning more than 3 elements.
+
+	* eval.c(rb_eval): In multiple assignment, when the right-hand side is not
+	  an array, convert it to an array using the `to_a' method before assigning.
+	  Previously the right-hand value was assigned directly to the first element,
+	  but for things like structs that can be converted to arrays, conversion
+	  seems nicer.
+
+	* dbm.c,dict.c(delete_if): Added method.
+
+	* process.c(wait,waitpid): When the system call waitpid or wait4 exists,
+	  use that. Modified configure to check for them as well.
+
+	* dbm.c, dict.c(clear): Added method.
+
+Fri Jul 15 10:54:45 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* array.c(Fary_fill,Fary_clear): Added methods.
+
+	* string.c(Fstr_split): When the value of $; is a 1-character string, split
+	  by it as a plain character without converting it to a regular expression.
+
+	* string.c(Fstr_aset/Fstr_aref): Modified the behavior for when the index is
+	  outside the string range, referencing Array.
+
+	* array.c(astore,Fary_aset): After reallocating the region, clear it with
+	  zero. Until now, garbage remained in arrays.
+
+	* array.c: Cleaned up index handling for []/[]=. Basically, exceptions no
+	  longer occur unless assigning to a negative index. Interpret appropriately
+	  as needed and expand the region when necessary.
+
+Thu Jul 14 11:18:07 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* autoexec.c: Removed. autoload-related features will be examined later.
+
+	* dict.c: Changed the formal name of the dictionary class to Dict. Prepared
+	  Hash as an alias. The previous long names like Dictionary were not used by
+	  anyone. *BACKWARD INCOMPATIBILITY*
+
+	* parse.y: Added syntax to create Dict. Used {..} for this.
+
+	* parse.y: Changed the syntax to create arrays to [..]. This breaks
+	  compatibility with older Ruby scripts, but introducing syntax for Dict and
+	  aligning with perl5 made now the only right time to change it.
+	  *BACKWARD INCOMPATIBILITY*
+
+	* eval.c(Feval): When defining methods via eval(), the defined method is now
+	  placed in the class to which the method belongs. Previously it was defined
+	  in Object.
+
+	* parse.y: Crashed in eval() when no local arguments existed.
+
+Thu Jul 14 11:18:07 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c: When a method does not exist, call Kernel:_undefined(id). But it
+	  feels like Ruby needs more class-level handling than per-method handling.
+
+	* autoexec.c: Removed. autoload-related features will be examined later.
+
+	* dict.c: Changed the formal name of the dictionary class to Dict. Prepared
+	  Hash as an alias. The previous long names like Dictionary were not used.
+	  *BACKWARD INCOMPATIBILITY*
+
+	* parse.y: Added syntax to create Dict. Used {..} for this.
+
+	* parse.y: Changed array-generation syntax to [..]. This breaks compatibility
+	  with past Ruby scripts, but to introduce Dict syntax and in line with
+	  perl5, now was the time. *BACKWARD INCOMPATIBILITY*
+
+	* eval.c(Feval): Methods defined via eval() are now placed in the class they
+	  belong to. Previously they were defined in Object.
+
+	* parse.y: Crashed in eval() when no local arguments existed.
+
+Tue Jul 12 09:41:28 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* pack.c: Support for uuencode format.
+
+	* Changed `-0' to `-R'. No longer possible to specify the output record
+	  separator from the command line. The spec keeps shifting…
+
+Mon Jul 11 09:51:24 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.c: The `-r' option became `-0'. `-r' still works for now but may
+	  change. `-R' remains for the time being.
+
+	* version.c: Included date in version display.
+
+	* parse.y: Restored private methods. Ruby’s private methods correspond to C++
+	  protected methods and have names starting with `@'.
+
+	* env.h: Separated definition of struct ENVIRON.
+
+	* parse.y: Allow `\$var', `\@var', `%var'.
+
+	* variable.c(Fdefined): Allow id as an argument.
+
+	* parse.y: Added keyword `then' to if/unless. Surprisingly many mistakes
+	  occurred without it. It may still be omitted.
+
+Sat Jul  9 02:16:04 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* eval.c(rb_eval): Class/module evaluation did not allocate a new scope.
+	  Moved scope allocation from rb_call() to rb_eval().
+
+	* eval.c(rb_call): The local-variable region passed to realloc() was being
+	  allocated with alloca(). No wonder it occasionally crashed.
+
+	* string.c(Fstr_times): Modified areas beyond the allocated region.
+
+Wed Jul  6 15:52:42 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* socket.c: Renamed Socket -> BasicSocket, RawSocket -> Socket.
+
+	* string.c(ucfirst,lcfirst): Uppercase/lowercase only the first character.
+
+	* numeric.c(chr): Stringification method for integers.
+
+	* inits.c, dbm.c: If DBM is unavailable, do not define the class at all.
+	  Unavailable classes should become nil going forward (previously errors
+	  occurred on access). autoexec() may need review.
+
+	* bignum.c(bigadd): Bug fix.
+
+Thu Jul  7 11:12:18 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(Fload,Feval): Forgot to clear eval_tree.
+
+	* _inspect: Convert objects into human-readable string (mainly for debug
+	  output).
+
+Wed Jul  6 00:57:18 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* numeric.c, bignum.c: `[]' operator for integers. Returns whether the n-th
+	  bit is set.
+
+Tue Jul  5 12:48:39 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* io.c(Feof): Added. Detect EOF even for virtual files from command line.
+
+	* ruby.c: Added -l/-r/-R/-X options.
+
+	* ruby.c: Moved loop addition for -n/-p options to main routine. Prevents
+	  exiting prematurely during option parsing (like with `-c').
+
+	* io.c(Fgets): Speedup. Not doing fancy things made it faster—sadly.
+
+Mon Jul  4 15:55:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Socket:getsockname/getpeername - Spec stabilized at last.
+
+	* io.c(Fgets): Instead of describing gets in each, describe each using gets.
+
+Fri Jul  1 10:35:49 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* $ENV[env] = nil/$ENV.delete(env) now deletes environment variables.
+	  $ENV.delete returns the previous value.
+
+	* Definition of !~ was wrong.
+
+	* Dict,DBM:[]= - Assigning nil deletes an element. Thus nil can no longer be
+	  an element of Dict.
+
+	* Cleaned the source; removed unused code like an appendix, renamed variables.
+
+Fri Jul  1 00:21:29 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Array:join() - Return empty string for arrays with zero elements.
+
+	* RawSocket:open(),socketpair() - Added several string-specified domains and
+	  types.
+
+Thu Jun 30 13:51:29 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Removed -f option. It’s a relic from before load existed; no longer needed.
+
+	* Added -s option. Works like perl’s -s.
+
+	* Provided RawSocket class for system-call level access to Socket.
+
+Thu Jun 30 00:27:19 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Socket - bug fixes.
+
+	* syscall(SYS_select) doesn’t work properly on linux.
+
+	* Socket:addr,peeraddr - Return sockaddr info as array.
+
+Wed Jun 29 00:14:20 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Socket:setopt,getopt - Access to setsockopt(2), getsockopt(2).
+
+	* sprintf() - Ruby has no unsigned, so removed %u.
+
+	* sprintf() - %b, %x, %o output two’s complement; %B, %X, %O output signed.
+	  Specs fluctuated recently, but this should settle it.
+
+Tue Jun 28 14:42:03 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Bignum:<<,>> - Removed processing for two’s complement. Not needed for
+	  shift operations.
+
+	* Bignum:^ - Bug fix. Sign was reversed.
+
+	* sprintf() - Added binary output "%b".
+
+	* sprintf() - Do not output two’s complement for Fixnum in %x, %o.
+
+	* sprintf() - For negative numbers, output '-' for %x, %o after all.
+
+Mon Jun 27 14:56:13 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* sprintf() - For Bignum, %d and %o now display positive integer by
+	  converting from two’s complement.
+
+	* Revised definitions of bitwise operations on Bignum. Treat negative numbers
+	  as two’s complement with infinite leading 1s.
+
+	* Fixnum:<<,>> - Changed to signed shifts.
+
+	* Bignum:>> - Support shifting of negative integers.
+
+	* Scripts can now end with __END__, ^D, ^Z.
+
+	* Added -x option. Skips input until a line containing #! ..ruby.
+
+	* Added -c option. Compile-only.
+
+Sat Jun 25 01:37:21 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Fixnum:<< - Expand to Bignum as needed for left shift. Thus values differ
+	  from C/Perl when shift > 32.
+
+Fri Jun 24 10:01:28 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ioctl()/fcntl() - Adjust buffer size before calling system calls.
+
+	* String:toupper/tolower - Modify original string rather than returning a
+	  replaced copy.
+
+	* Implemented inplace edit. Use `-i' like perl. Doesn’t consider MS-DOS.
+
+	* Added default output destination. Previously only way was assigning to
+	  $stdout.
+
+Fri Jun 17 10:55:08 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Added $ENV as another way to access environment variables aside from
+	  getenv()/setenv(). $ENV behaves like a string-to-string dictionary; each
+	  returns assoc.
+
+	* Assigning to nil caused core dump. Strengthened compile-time checks.
+
+	* Struct: Need GC-protection for struct_new() arguments. Maybe must scan
+	  stack area for portability… though that hurts portability.
+
+Fri Jun 17 01:01:46 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Time::asctime() - Day was missing in date format.
+
+	* Stat: Since Stat is implemented as a Struct like Etc, removed Stat class.
+
+Thu Jun 16 10:32:23 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* bignum.c: Fixed several bugs. Passed normal int where Fixnum should be.
+	  Failure.
+
+	* big2str() - Divide 4 digits at a time instead of 1 in certain bases.
+	  Division count becomes 1/4. Also use table for converting integers to
+	  characters.
+
+	* rb_ivar_get_1() - Undefined instance variable returned garbage on objects
+	  already having some instance variables.
+
+	* yylex() - Failed to recognize instance variables. attr() worked correctly,
+	  so mixing caused failure. Everything was wrong so it worked…
+
+	* Object:attr() - Do not define default accessor methods if already defined.
+	  No distinction between accessor and same-named method in Ruby, but oh well.
+
+	* pack.c: Determined endianness using autoconf, enabling v/V. Prepared our
+	  own ntoh?()/hton?().
+
+	* Stat: Added accessor for st_rdev. autoconf now checks whether system’s
+	  stat struct has st_blksize, st_block.
+
+	* Cleaned up some documentation.
+
+	* Replaced INT2FIX() that cannot guarantee 31-bit width with int2inum().
+
+Wed Jun 15 10:18:27 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* sprintf() - Correctly compute output width for bignum output.
+
+	* str2inum() - When base is 0, auto-detect base (0x => hex, 0 => octal).
+
+Tue Jun 14 16:08:42 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* gc.c: Forgot to add Bignum. Must add processing to mark() and sweep() when
+	  adding built-in types.
+
+	* bignum: Division seems to work? Unsure—don’t fully understand algorithm.
+
+Mon Jun 13 14:36:55 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Although some methods still unsupported, Bignum is usable. ioctl works.
+
+Fri Jun 10 17:26:42 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Comparable: Base methods changed from `==' and `>' to `<=>'. Subclasses now
+	  only need `<=>'.
+
+Wed Jun  8 13:12:18 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Removed nearly all Need_Fixnum(), use NUM2INT() to convert directly to int.
+	  Prevents loss from forcing into 31 bits.
+
+Tue Jun  7 09:45:31 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.h: Added FIXABLE(n) macro. Revised FIXNUM definitions to improve
+	  portability (hopefully).
+
+	* Removed "new" which is a C++ keyword. But "class" is also reserved and has
+	  no replacement, so left unchanged.
+
+	* INT2FIX() that might exceed 31 bits now uses function call. Will return
+	  bignum automatically in the future.
+
+	* readline(): `-' argument means standard input.
+
+	* ruby.h: Since whether right shift is logical or arithmetic depends on
+	  implementation, check via cpp in ruby.h. Should work, but I have no system
+	  with logical right shift for signed ints. On NEWS-OS CC, I think right
+	  shift was always logical…
+
+Mon Jun  6 10:10:22 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Modified definition of FIX2INT(). Why didn’t it work before? Maybe sign
+	  extension on right shift is implementation dependent?
+
+	* Distinguished FIX2INT() and FIX2UINT(). fixnum is only 31 bits, so not a
+	  real solution (wanted ioctl built-in).
+
+	* Changed print from functional method to normal method. When given no
+	  arguments, print receiver. Enables message form:
+
+		ruby -e 'readlines().sort.print'
+
+	  Above sorts input lines (from args or stdin) and prints them.
+
+	* eval.c: Methods receiving argc,argv pattern had argv=nil when no arguments,
+	  causing crash on argv[0].
+
+	* Added _exit(). No exception handling.
+
+	* dbm class: Unified class name to DBM (uppercase).
+
+Sat Jun  4 00:51:04 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Loop variables may now specify attributes or array elements.
+
+Fri Jun  3 09:49:48 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* In multiple assignment, allow attribute assignment and array-element
+	  assignment too.
+
+	* Need_Fixnum(): Convert nil to 0.
+
+	* Enumerable:min, max, index, includes - Added. min/max assume elements have
+	  `<=>'.
+
+	* Dict/Dbm:length - Return element count.
+
+	* Added to_a to Dbm class.
+
+	* Sun sort misbehavior fixed by yesterday’s change. But unclear why it broke;
+	  comparing function returning weird values shouldn’t access outside region.
+
+	* Method returning all lines as array named `readlines` after python.
+	  Added alias readline for gets.
+
+Fri Jun  3 00:08:38 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Array:sort - Comparator should return Int, not Fixnum. Mistake. Possibly
+	  reason for Sun issues.
+
+Thu Jun  2 11:48:37 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* IO:read_all() - Added method to read until end of stream and return array
+	  of lines. Added function method read_all() reading from argument file.
+	  Semantically same as:
+
+		def read_all()
+	  	  ary = {}
+	  	  while gets()
+		    ary.push($_)
+		  end
+		end
+
+	* Deleted String:atoi. to_a suggests array; want to avoid confusion. Use
+	  to_i instead.
+
+	* Introduced to_a for array conversion. Normal objects return array of length
+	  1 containing themselves. Arrays return themselves. Dictionaries return array
+	  of key/value pairs. Classes including Enumerated return array of each item
+	  from each.
+
+	* file.c: Rewrote variadic methods (chmod,chown,utimes), cleaning them.
+	  Now do type check for all arguments first; on failure, raise exception.
+
+	* configure.in: Stop unnecessary tests.
+
+Tue May 31 10:41:08 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* String:pack(): Binary string conversion (B,b) had 0 and 1 reversed.
+
+	* Math.c: Automatically convert integers to real types when passed to real
+	  methods.
+
+	* toupper(), tolower(): Due to string-detection bug, conversion didn’t occur.
+
+	* getopt_long(): Script arguments interpreted as interpreter args. Added `+`
+	  at beginning of argument pattern string.
+
+	* Deleted config.h. DEFINE provided by Makefile.
+
+	* sprintf(): When "%d" receives a string, convert its content to integer
+	  instead of address. Also convert floats.
+
+	* regexp.c: Ruby’s extended regex (\d,\D,\s,\S) wrote past allocated region.
+	  Now expand buffer properly. Yesterday’s memory problem likely solved.
+
+	* yylex(): Could not express double-quote inside double-quoted string using
+	  backslash.
+
+Mon May 30 10:07:42 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Treat right-hand side of operator `!' as conditional expression. This may
+	  confuse re-definers but helps most users avoid confusion.
+
+	* Use autoconf to generate Makefile and config.h. Should allow compile with
+	  just `configure` then `make` on most machines.
+
+	* clone: When used on subclass, return instance of same class (previously did
+	  not consider built-in subclasses).
+
+	* Added new method to literal-having classes to allow subclassing of built-in
+	  classes.
+
+	* malloc() crashes. Might need purify.
+
+	* re.c: Wrong rb_global_variable() call: must pass pointer to variable.
+
+	* parse.y: Non-portable handling of local variables dependent on argument
+	  evaluation order.
+
+	* attr(): Fixed bug in attribute setting. When did the internals change…?
+
+Sat May 28 23:08:18 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Changed regex cache string comparison from pointer-equality to content-
+	  equality. Literal strings create new objects each time.
+
+Fri May 27 11:42:00 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Default regex encoding changed to non-Kanji. Slight speedup.
+
+	* Split tr into delete and squeeze. No option arguments for tr now.
+
+Thu May 26 10:32:55 1994  Yukihiro Matsumoto  (matz@ix-02)
+
+	* Rewrote script-loading routine; now handles non-regular filenames or empty
+	  string script names. Also prevents temporary files remaining in /tmp when
+	  reading from stdin.
+
+	* Fixnum:id2name - Convert ID to string. Opposite of String:intern.
+
+	* Array: Accessing element outside array range returns nil instead of
+	  raising exception. Auto-expands array.
+
+	* string: Added strip.
+
+	* -n works even with multiple -e.
+
+	* parse.y includes <sys/types.h> now.
+
+	* Fixed small bugs around fname.
+
+Wed May 26 11:45:10 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Added constant caching. Helps when repeated many times, slows when only
+	  accessed once.
+
+Wed May 25 00:42:24 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Adopted multiple assignment (foo, bar = 1, 2).
+
+	* When placing string or regex literal in conditional, compare with `$_`
+	  using `=~'. For ... operator, compare integer literals with `$.'.
+
+Mon May 23 23:27:03 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Removed &form syntax. Introduced kernel:apply(id, args..).
+
+	* Introduced def op () .. form. op is redefinable operator.
+
+	* Check constant assignment. Assigning to already-initialized constant raises
+	  exception.
+
+	* Multiple assignment.
+
+Thu May 19 22:57:07 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Now check void value even in compound statements.
+
+	* Fixed until behavior (it was do..until type).
+
+Wed May 18 01:06:25 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Fixed some portability issues.
+
+	* Alias syntax changed to “def a b”.
+
+	* until/unless: from operators to control statements. Exception-catching
+	  remains.
+
+	* Moved selectable features from config.h to defines.h.
+
+Fri May 13 23:20:21 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Added -y option. Separated compiler debug portion from -d.
+
+Tue Apr 25 20:17:33 1994  Yukihiro Matsumoto  (matz@dyna)
+
+	* Allow multibyte strings as identifiers. Personally don’t want to use them…
+
+	* Expose `-v' flag state via $verbose.
+
+	* With CVS introduction, changed version-control method.
+
+	* Decided to maintain ChangeLog properly.
+
+Tue Mar  8 10:09:25 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Introduced class constants via %varname.
+
+	* Introduced undef method to remove method definitions.
+
+	* rb_get_method_body no longer alters the_env; rb_call() changes explicitly.
+	  Prevents environment corruption via responds_to etc.
+
+Mon Mar  7 17:46:15 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* “&string” form. Removed “expr.string” message-send form.
+
+	* Self-assignment forms (+=, -=, ...)
+
+	* Adopted obj.attr = expr form.
+
+Thu Feb 24 16:23:28 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Changed toint, tofloat, print_string to to_i, to_f, to_s.
+
+	* String:clone - Implement Copy on Write.
+
+Tue Feb 22 11:11:44 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* re.c: Failed to save matched strings.
+
+	* trap: If possible, hook slow system calls (read, wait, sigpause, select) to
+	  improve interrupt responsiveness (not possible on DOS…).
+
+	* trap: Allow choosing between immediate interrupt handling (fast but risky)
+	  and safe-timing handling.
+
+Tue Feb 17 11:11:12 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* trap: Interrupt handler.
+
+Wed Feb 16 12:29:12 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* String:crypt: encryption routine.
+
+	* Added "::" operator. a::b is same as {a, b}. a::b::c is {a, {b, c}}
+	  (right-associative). Though equivalent, "::" is slightly more memory-
+	  efficient.
+
+	* Dir.rmdir(), File.unlink(), File.utime() -- interfaces to each system
+	  call.
+
+	* kill -- kill(2) interface.
+
+	* select(): For read checks, check whether data is buffered by stdio.
+
+Tue Feb 15 15:08:31 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* file.c: Cache stat.
+
+	* Added File:utime().
+
+	* unliteralize(): Destroyed flags.
+
+	* Bug(): emits core.
+
+	* String:tr -- tr(1) compatible. Argument patterns differ somewhat.
+
+Mon Feb 14 18:24:13 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* unless, until now treat exceptions as false.
+
+	* select() -- select(2) I/F
+
+	* Array:pack, String:unpack: perl-compatible pack/unpack
+
+Tue Feb  8 17:11:10 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* For systems without setenv(), prepared code using putenv().
+
+Mon Feb  7 09:52:44 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Allow `*' at end of argument list. Reduces need to manipulate rest-arg list.
+
+Fri Feb  4 18:23:26 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Rewrote ruby-mode.el. Much improved.
+
+	* Implement Copy on Write for string literals. No need to clone literals each
+	  time.
+
+Tue Feb  1 09:21:09 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* sub(), gsub(): Matched strings now accessible via $&, $1..$9. Also copy
+	  matched substrings so state survives when original string changes.
+
+Mon Jan 31 15:16:58 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Changed private method spec. Originally only same-class methods accessed
+	  them; now subclasses may also access (like C++ protected).
+
+	* Improved method-search algorithm, ~10% faster.
+
+	* Speed improvements. Avoid setjmp when calling C methods. C-heavy code
+	  becomes ~3× faster.
+
+Fri Jan 28 15:44:04 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Created ruby-mode.el based on sh-mode. Doesn’t handle multi-line statements
+	  ending with operators.
+
+Thu Jan 27 11:35:19 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* freenode(): Forgot to free NODE_NIL.
+
+	* Fixed lexing bug (state not restored after comment).
+
+	* Fixed protect .. end bug. GC_LINK nesting was wrong.
+
+	* Fixed join bug (freeing object in use).
+
+	* Fixed split bug (wrong algorithm).
+
+	* Added fork().
+
+Wed Jan 26 17:09:56 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Added file-test methods.
+
+	* rb_autoexec(): Allow controlling behavior on first access to class. Enables
+	  autoload. Method unknown removed.
+
+Tue Jan 25 15:51:36 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Created Dbm class, Math module.
+
+	* -I adds to search path.
+
+	* Search path assignable to $load_path.
+
+	* load(): Enabled dynamic loading.
+
+Tue Jan 18 14:14:01 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Comparable:"<=>"
+
+	* Float,Fixnum:"**"
+
+	* Array:sort
+
+Fri Jan 14 16:53:37 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* version 0.07
+
+	* Enhanced documentation about methods.
+
+	* String:index(): Added position argument.
+
+Thu Jan 13 15:13:52 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Removed access to uninitialized variables.
+
+	* Removed unnecessary hash table allocations.
+
+	* Purify'd (on Sun)
+
+	* Suppressed compile-time expansion of ~RE and ~STR.
+
+	* Ported to Sun. signal() return value. Fixed RData bug.
+
+	* parse.y: Removed nls rule.
+
+	* yylex(): Changed parsing of newline and sign.
+
+	* missing/strftime.c: For portability.
+
+	* Time:strftime: Other methods now use strftime.
+
+	* Clear method cache on redefinition.
+
+Fri Jan  7 15:23:20 1994  Yukihiro Matsumoto  (matz at nws119)
+
+	* Float:coerce(): Raise exception for args other than Fixnum and Float.
+
+	* Stat: Added access methods for all stat struct members.
+
+	* Reference to undefined class/module now calls unknown method.
+
+	* baseline - version 0.06.

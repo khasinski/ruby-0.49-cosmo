@@ -2,3 +2,6 @@
 ruby
 fixed/Makefile
 fixed/config.status
+
+# cosmo toolchain
+toolchain
