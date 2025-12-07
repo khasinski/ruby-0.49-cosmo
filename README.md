@@ -77,6 +77,7 @@ This repo's structured as follows:
 - `original` is the exact original code
 - `fixed` contains my updated code.
 - `cosmo` contains the Cosmopolitan port for universal binaries.
+- `gem` contains the `ancient_ruby` gem for using Ruby 0.49 from modern Ruby.
 - `fixed/{ruby.1,ToDo,ChangeLog,C-IF}` have all been converted from the original `EUC-JP` encoding[^1] and then translated via AI. Not sure how correct they are!
 
 [^1]: You can convert via `iconv -f EUC-JP -t UTF-8 input.txt`
