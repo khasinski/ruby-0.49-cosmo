@@ -23,7 +23,9 @@
 
 char *strdup();
 
-extern int errno;
+#ifndef __COSMOPOLITAN__
+extern int errno; /* __r49_cosmo: errno is macro in cosmo */
+#endif
 int dln_errno;
 
 static int dln_init_p = 0;
